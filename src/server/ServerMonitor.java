@@ -19,15 +19,9 @@ import se.lth.cs.eda040.fakecamera.*; // Provides AxisM3006V
  * requested file name.
  */
 public class ServerMonitor {
-	// ----------------------------------------------------- PRIVATE ATTRIBUTES
-
-	private int myPort; // TCP port for HTTP server
-	private AxisM3006V myCamera; // Makes up the JPEG images
-
-	// By convention, these bytes are always sent between lines
-	// (CR = 13 = carriage return, LF = 10 = line feed)
-
-	private static final byte[] CRLF = { 13, 10 };
+	private Socket clientsocket;
+	private String request;
+	private int myPort;
 
 	// ----------------------------------------------------------- MAIN PROGRAM
 
@@ -37,7 +31,7 @@ public class ServerMonitor {
 			theServer.handleRequests();
 		} catch (IOException e) {
 			System.out.println("Error!");
-			theServer.destroy();
+			//theServer.destroy();
 			System.exit(1);
 		}
 	}
@@ -49,11 +43,25 @@ public class ServerMonitor {
 	 *            The TCP port the server should listen to
 	 */
 	public ServerMonitor(int port) {
-		myPort = port;
-		myCamera = new AxisM3006V();
-		myCamera.init();
-		myCamera.setProxy("argus-1.student.lth.se", port);
+	
 	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 
 	// --------------------------------------------------------- PUBLIC METHODS
 
@@ -71,7 +79,7 @@ public class ServerMonitor {
 	 * text lines from/to streams. Their implementations follow below.
 	 */
 	public void handleRequests() throws IOException {
-		byte[] jpeg = new byte[AxisM3006V.IMAGE_BUFFER_SIZE];
+		
 		ServerSocket serverSocket = new ServerSocket(myPort);
 		System.out.println("HTTP server operating at port " + myPort + ".");
 
@@ -103,47 +111,16 @@ public class ServerMonitor {
 
 				System.out.println("HTTP request '" + request + "' received.");
 
-				// Interpret the request. Complain about everything but GET.
-				// Ignore the file name.
-				if (request.substring(0, 4).equals("GET ")) {
-					// Got a GET request. Respond with a JPEG image from the
-					// camera. Tell the client not to cache the image
-					putLine(os, "HTTP/1.0 200 OK");
-					putLine(os, "Content-Type: image/jpeg");
-					putLine(os, "Pragma: no-cache");
-					putLine(os, "Cache-Control: no-cache");
-					putLine(os, ""); // Means 'end of header'
-
-					if (!myCamera.connect()) {
-						System.out.println("Failed to connect to camera!");
-						System.exit(1);
-					}
-					int len = myCamera.getJPEG(jpeg, 0);
-
-					os.write(jpeg, 0, len);
-					myCamera.close();
-				} else {
-					// Got some other request. Respond with an error message.
-					putLine(os, "HTTP/1.0 501 Method not implemented");
-					putLine(os, "Content-Type: text/plain");
-					putLine(os, "");
-					putLine(os, "No can do. Request '" + request
-							+ "' not understood.");
-
-					System.out.println("Unsupported HTTP request!");
-				}
-
-				os.flush(); // Flush any remaining content
-				clientSocket.close(); // Disconnect from the client
+		
 			} catch (IOException e) {
 				System.out.println("Caught exception " + e);
 			}
 		}
 	}
 
-	public void destroy() {
-		myCamera.destroy();
-	}
+//	public void destroy() {
+//		myCamera.destroy();
+//	}
 
 	// -------------------------------------------------------- PRIVATE METHODS
 
@@ -168,15 +145,20 @@ public class ServerMonitor {
 
 		return result;
 	}
-
-	/**
-	 * Send a line on OutputStream 's', terminated by CRLF. The CRLF should not
-	 * be included in the string str.
-	 */
-	private static void putLine(OutputStream s, String str) throws IOException {
-		s.write(str.getBytes());
-		s.write(CRLF);
+/**
+ * the following methods are created by Amnup and Emnup
+ * @return
+ */
+	public synchronized String getRequest() {
+		// gives the request to the writer
+		return request;
 	}
+	public synchronized void setRequest(String newReq) {
+		// sets the request for the writer
+		request = newReq;
+	}
+
+	
 
 
 }
