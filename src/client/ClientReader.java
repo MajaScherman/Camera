@@ -1,7 +1,10 @@
 package client;
 
+
+
 import java.io.InputStream;
-import java.net.Socket;
+
+
 
 public class ClientReader extends Thread {
 	private ClientMonitor monitor;
@@ -11,7 +14,7 @@ public class ClientReader extends Thread {
 		monitor = m;
 		inputstream = in;
 	}
-
+	
 	public void Run(){
 		
 	}
