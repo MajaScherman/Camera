@@ -19,9 +19,52 @@ import se.lth.cs.eda040.fakecamera.*; // Provides AxisM3006V
  * requested file name.
  */
 public class ServerMonitor {
-	private Socket clientsocket;
+	// private Socket clientsocket;
+	// private String request;
+	// private int myPort;
+
+	/**
+	 * Writing what I think is necessary here for our version//Maja
+	 */
+	private Socket clientSocket;
+	private InputStream is;
+	private OutputStream os;
 	private String request;
 	private int myPort;
+
+	public synchronized void setClientSocket(Socket clientSocket,
+			InputStream is, OutputStream os) {
+		this.clientSocket = clientSocket;
+		this.is = is;
+		this.os = os;
+
+	}
+	public synchronized Socket getClientSocket(){
+		return clientSocket;
+	}
+	
+	public synchronized InputStream getInputStream(){
+		return is;
+	}
+	public synchronized OutputStream getOutputStream(){
+		return os;
+	}
+	
+
+	/**
+	 * the following methods are created by Amnup and Emnup
+	 * 
+	 * @return
+	 */
+	public synchronized String getRequest() {
+		// gives the request to the writer
+		return request;
+	}
+
+	public synchronized void setRequest(String newReq) {
+		// sets the request for the writer
+		request = newReq;
+	}
 
 	// ----------------------------------------------------------- MAIN PROGRAM
 
@@ -31,7 +74,7 @@ public class ServerMonitor {
 			theServer.handleRequests();
 		} catch (IOException e) {
 			System.out.println("Error!");
-			//theServer.destroy();
+			// theServer.destroy();
 			System.exit(1);
 		}
 	}
@@ -43,25 +86,8 @@ public class ServerMonitor {
 	 *            The TCP port the server should listen to
 	 */
 	public ServerMonitor(int port) {
-	
+
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 
 	// --------------------------------------------------------- PUBLIC METHODS
 
@@ -79,7 +105,7 @@ public class ServerMonitor {
 	 * text lines from/to streams. Their implementations follow below.
 	 */
 	public void handleRequests() throws IOException {
-		
+
 		ServerSocket serverSocket = new ServerSocket(myPort);
 		System.out.println("HTTP server operating at port " + myPort + ".");
 
@@ -111,16 +137,15 @@ public class ServerMonitor {
 
 				System.out.println("HTTP request '" + request + "' received.");
 
-		
 			} catch (IOException e) {
 				System.out.println("Caught exception " + e);
 			}
 		}
 	}
 
-//	public void destroy() {
-//		myCamera.destroy();
-//	}
+	// public void destroy() {
+	// myCamera.destroy();
+	// }
 
 	// -------------------------------------------------------- PRIVATE METHODS
 
@@ -145,20 +170,5 @@ public class ServerMonitor {
 
 		return result;
 	}
-/**
- * the following methods are created by Amnup and Emnup
- * @return
- */
-	public synchronized String getRequest() {
-		// gives the request to the writer
-		return request;
-	}
-	public synchronized void setRequest(String newReq) {
-		// sets the request for the writer
-		request = newReq;
-	}
-
-	
-
 
 }
