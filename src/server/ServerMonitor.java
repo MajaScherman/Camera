@@ -32,24 +32,54 @@ public class ServerMonitor {
 	private String request;
 	private int myPort;
 
-	public synchronized void setClientSocket(Socket clientSocket,
-			InputStream is, OutputStream os) {
-		this.clientSocket = clientSocket;
-		this.is = is;
-		this.os = os;
-
+	public synchronized void setPort(int myPort) {
+		this.myPort = myPort;
 	}
-	public synchronized Socket getClientSocket(){
+
+	public synchronized int getPort() {
+		return myPort;
+	}
+
+	public synchronized void setClientSocket(Socket clientSocket) {
+		this.clientSocket = clientSocket;
+		synchStreamsAndRequest();
+	}
+
+	public synchronized void synchStreamsAndRequest() {
+		try {
+
+			is = clientSocket.getInputStream();
+			os = clientSocket.getOutputStream();
+
+			// Read the request
+			request = getLine(is);
+
+			// The request is followed by some additional header lines,
+			// followed by a blank line. Those header lines are ignored.
+			String header;
+			boolean cont = true;
+			do {
+				header = getLine(is);
+				cont = !(header.equals(""));
+			} while (cont);
+
+			System.out.println("HTTP request '" + request + "' received.");
+		} catch (IOException e) {
+			System.out.println("Caught exception " + e);
+		}
+	}
+
+	public synchronized Socket getClientSocket() {
 		return clientSocket;
 	}
-	
-	public synchronized InputStream getInputStream(){
+
+	public synchronized InputStream getInputStream() {
 		return is;
 	}
-	public synchronized OutputStream getOutputStream(){
+
+	public synchronized OutputStream getOutputStream() {
 		return os;
 	}
-	
 
 	/**
 	 * the following methods are created by Amnup and Emnup
