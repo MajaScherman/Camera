@@ -10,12 +10,10 @@ public class ButtonHandler implements ActionListener {
 	GUI gui;
 
 	public ButtonHandler(GUI gui) {
-		
+		this.gui = gui;
 	}
 
 	public void actionPerformed(ActionEvent evt) {
-		
+
 	}
 }
-
-
