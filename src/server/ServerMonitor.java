@@ -45,7 +45,7 @@ public class ServerMonitor {
 		synchStreamsAndRequest();
 	}
 
-	public synchronized void synchStreamsAndRequest() {
+	private synchronized void synchStreamsAndRequest() {
 		try {
 
 			is = clientSocket.getInputStream();
