@@ -43,11 +43,14 @@ public class ClientMonitor {
 	
 	public boolean checkSyncMode(){
 		//Checks if the cameras are in sync
+		// Updater uses this to check if they are synchronous and use this knowledge when displaying the images 
 		return syncMode;
 		
 	}
 	
 	public boolean changeModeFlag(){
+		// Should be called by the reader when one camera has changed to movie mode.
+		// This should trigger the writer to tell the other cameras to change to movie mode as well.<z<
 		return movieMode;
 		
 	}
