@@ -31,6 +31,7 @@ public class ServerMonitor {
 	private OutputStream os;
 	private String request;
 	private int myPort;
+	private boolean movieMode;
 
 	public synchronized void setPort(int myPort) {
 		this.myPort = myPort;
@@ -199,6 +200,21 @@ public class ServerMonitor {
 		}
 
 		return result;
+	}
+	
+	/**
+	 * suggested new methods. Remove the above copy pasted code?
+	 * by Amy & Emelie
+	 * 
+	 */
+	public void changeMode(boolean newMode){
+		// Writer uses this when a motion is detected. 
+		// Reader uses this when the user wants to set the mode back to idle.
+		movieMode=newMode; 
+	}
+	
+	public boolean getMode(){
+		return movieMode;		
 	}
 
 }
