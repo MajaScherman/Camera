@@ -11,10 +11,29 @@ public class ClientWriter extends Thread {
 		monitor = mon;
 		os = stream;
 	}
-
+	
+	
 	public void run(){
 		while(!isInterrupted()){
-			
+			try {
+				// Send a simple request, always for "/image.jpg"
+				putLine(os, "GET /image.jpg HTTP/1.0");
+				putLine(os, "");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}        // The request ends with an empty line
 		}
 	}
+	
+	private static final byte[] CRLF      = { 13, 10 };
+	
+	/**
+	 * Send a line on OutputStream 's', terminated by CRLF. The CRLF should not
+	 * be included in the string str.
+	 */
+	private static void putLine(OutputStream s, String str) throws IOException {
+		s.write(str.getBytes());
+		s.write(CRLF);
+	}
+
 }
