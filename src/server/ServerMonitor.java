@@ -27,11 +27,22 @@ public class ServerMonitor {
 	 * Writing what I think is necessary here for our version//Maja
 	 */
 	private Socket clientSocket;
-	private InputStream is;
-	private OutputStream os;
+	private InputStream is; // the is from the client, is used as the os from
+							// the server
+	private OutputStream os; // the os from the client, is used as the is from
+								// the server
 	private String request;
 	private int myPort;
 	private boolean movieMode;
+
+	public synchronized void setMovieMode(boolean movieMode) {
+		this.movieMode = movieMode;
+		notifyAll();
+	}
+
+	public synchronized boolean getMovieMode() {
+		return movieMode;
+	}
 
 	public synchronized void setPort(int myPort) {
 		this.myPort = myPort;
@@ -98,6 +109,7 @@ public class ServerMonitor {
 	public synchronized void setRequest(String newReq) {
 		// sets the request for the writer
 		request = newReq;
+		notifyAll();
 	}
 
 	// ----------------------------------------------------------- MAIN PROGRAM
@@ -204,20 +216,19 @@ public class ServerMonitor {
 
 		return result;
 	}
-	
+
 	/**
-	 * suggested new methods. Remove the above copy pasted code?
-	 * by Amy & Emelie
+	 * suggested new methods. Remove the above copy pasted code? by Amy & Emelie
 	 * 
 	 */
-	public void changeMode(boolean newMode){
-		// Writer uses this when a motion is detected. 
+	public void changeMode(boolean newMode) {
+		// Writer uses this when a motion is detected.
 		// Reader uses this when the user wants to set the mode back to idle.
-		movieMode=newMode; 
+		movieMode = newMode;
 	}
-	
-	public boolean getMode(){
-		return movieMode;		
+
+	public boolean getMode() {
+		return movieMode;
 	}
 
 }
