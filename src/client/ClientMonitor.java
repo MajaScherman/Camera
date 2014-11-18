@@ -35,6 +35,7 @@ public class ClientMonitor {
 				e.printStackTrace();
 			}
 		}
+		//TODO do something
 		updateGUI = false;
 	}
 

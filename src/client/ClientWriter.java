@@ -15,6 +15,8 @@ public class ClientWriter extends Thread {
 	
 	public void run(){
 		while(!isInterrupted()){
+			//This is far from finished. 
+//			What should be done is that we get a command from the monitor and perform different actions depending on the request
 			try {
 				// Send a simple request, always for "/image.jpg"
 				putLine(os, "GET /image.jpg HTTP/1.0");
