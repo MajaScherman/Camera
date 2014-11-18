@@ -34,7 +34,7 @@ public class ServerReader extends Thread {
 				clientSocket = serverSocket.accept();
 			} catch (IOException e) {
 				System.out
-						.print("Error, no ClientSocket, inputstream or outputstream");
+						.print("Error, no ClientSocket??");
 			}
 			mon.setClientSocket(clientSocket);
 			//our input is the clients output, right?

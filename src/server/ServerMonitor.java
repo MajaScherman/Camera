@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream; // Provides InputStream, OutputStream
 import java.io.OutputStream;
 import java.net.Socket; // Provides ServerSocket, Socket
+import java.nio.ByteBuffer;
 
 import se.lth.cs.eda040.fakecamera.AxisM3006V; // Provides AxisM3006V
 
@@ -30,8 +31,10 @@ public class ServerMonitor {
 	private boolean movieMode;
 	private AxisM3006V camera;
 	private String header;
+	private int cameraNbr;
 
-	public ServerMonitor(int port) {
+	public ServerMonitor(int port, int cameraNbr) {
+		this.cameraNbr = cameraNbr;
 		this.port = port;
 		camera = new AxisM3006V();
 		camera.init();
@@ -59,14 +62,14 @@ public class ServerMonitor {
 
 	public synchronized void setClientSocket(Socket clientSocket) {
 		this.clientSocket = clientSocket;
-		synchStreamsAndRequest();
+		synchStreams();
 		readRequest();
 		readHeader();
 
 		notifyAll();
 	}
 
-	private synchronized void synchStreamsAndRequest() {
+	private synchronized void synchStreams() {
 		try {
 
 			is = clientSocket.getInputStream();
@@ -130,6 +133,25 @@ public class ServerMonitor {
 
 	public synchronized OutputStream getOutputStream() {
 		return os;
+	}
+
+	public synchronized int getCameraNbr() {
+		return cameraNbr;
+	}
+//Hopefully its ok to add 1 to have spaceship for cameraNbr
+	public static int BUFFER_LENGTH = AxisM3006V.IMAGE_BUFFER_SIZE
+			+ AxisM3006V.TIME_ARRAY_SIZE + 1;
+
+	public synchronized byte[] packageMessage(int cameraNbr, byte[] time,
+			byte[] image) {
+		ByteBuffer bb = ByteBuffer.allocate(BUFFER_LENGTH);
+		bb.put(time);
+		bb.putInt(cameraNbr);
+		bb.put(image);
+		byte[] message = new byte[bb.capacity()];
+		bb.get(message, 0, message.length);
+		return message;
+
 	}
 
 	/**
