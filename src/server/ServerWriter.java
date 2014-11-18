@@ -8,7 +8,7 @@ import java.net.Socket;
 import se.lth.cs.eda040.fakecamera.AxisM3006V;
 
 
-public class ServerWriter {
+public class ServerWriter extends Thread {
 	private ServerSocket serverSocket;
 	private ServerMonitor mon;
 	private Socket clientSocket;
@@ -20,11 +20,11 @@ public class ServerWriter {
 	public ServerWriter(ServerSocket serverSocket, ServerMonitor mon, AxisM3006V camera) {
 		this.serverSocket = serverSocket;
 		this.mon = mon;
-		this.camera = camera;
-		
-	
+		this.camera = camera;	
 	}
-	
+	public void run(){
+		
+	}
 	
 
 }
