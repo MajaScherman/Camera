@@ -35,6 +35,7 @@ public class ServerMonitor {
 
 	public synchronized void setPort(int myPort) {
 		this.myPort = myPort;
+		notifyAll();
 	}
 
 	public synchronized int getPort() {
@@ -44,6 +45,7 @@ public class ServerMonitor {
 	public synchronized void setClientSocket(Socket clientSocket) {
 		this.clientSocket = clientSocket;
 		synchStreamsAndRequest();
+		notifyAll();
 	}
 
 	private synchronized void synchStreamsAndRequest() {
@@ -65,6 +67,7 @@ public class ServerMonitor {
 			} while (cont);
 
 			System.out.println("HTTP request '" + request + "' received.");
+			notifyAll();
 		} catch (IOException e) {
 			System.out.println("Caught exception " + e);
 		}
