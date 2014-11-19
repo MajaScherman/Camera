@@ -40,10 +40,12 @@ public class ServerWriter extends Thread {
 				// ev.uppdater mon
 				// skicka bild till client
 				camera.getTime(imageTime, 0);
-				byte[] message = mon.packageMessage(mon.getCameraNbr(),imageTime , image);
-				is = mon.getInputStream();
-			} 
-			if(camera.motionDetected()){
+				byte[] message = mon.packageImage(0, length,
+						mon.getCameraNbr(), imageTime, image);
+				mon.sendPackage(message);
+				
+			}
+			if (camera.motionDetected()) {
 				mon.setMovieMode(true);
 			}
 		}

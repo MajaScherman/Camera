@@ -12,6 +12,7 @@ package server;
 import java.io.IOException;
 import java.io.InputStream; // Provides InputStream, OutputStream
 import java.io.OutputStream;
+import java.net.ServerSocket;
 import java.net.Socket; // Provides ServerSocket, Socket
 import java.nio.ByteBuffer;
 
@@ -32,6 +33,7 @@ public class ServerMonitor {
 	private AxisM3006V camera;
 	private String header;
 	private int cameraNbr;
+	private ServerSocket serverSocket;
 
 	public ServerMonitor(int port, int cameraNbr) {
 		this.cameraNbr = cameraNbr;
@@ -40,36 +42,75 @@ public class ServerMonitor {
 		camera.init();
 		camera.setProxy("argus-1.student.lth.se", port);
 
+		try {
+			serverSocket = new ServerSocket(port);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
-	public synchronized void setMovieMode(boolean movieMode) {
-		this.movieMode = movieMode;
+	public synchronized void closeConnection() {
+		try {
+			clientSocket.close();
+			serverSocket.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public synchronized void sendPackage(byte[] packet) {
+		try {
+			os.write(packet);
+			os.flush();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
+	// Hopefully its ok to add 3*4 for our spaceship
+	public static int BUFFER_LENGTH = AxisM3006V.IMAGE_BUFFER_SIZE
+			+ AxisM3006V.TIME_ARRAY_SIZE + 4 * 3;
+
+	public synchronized byte[] packageImage(int type, int size, int cameraNbr,
+			byte[] time, byte[] image) {
+		ByteBuffer bb = ByteBuffer.allocate(BUFFER_LENGTH);
+		bb.putInt(type);
+		bb.putInt(size);
+		bb.putInt(cameraNbr);// 4 bytes for every int
+		bb.put(time);
+		bb.put(image);
+		byte[] message = new byte[bb.capacity()];
+		bb.get(message, 0, message.length);
+		return message;
+
+	}
+
+	public synchronized ServerSocket getServerSocket() {
+		return serverSocket;
+	}
+
+	public synchronized void acceptClient() {
+		try {
+			clientSocket = serverSocket.accept();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		notifyAll();
 	}
 
-	public synchronized boolean getMovieMode() {
-		return movieMode;
-	}
-
-	public synchronized void setPort(int port) {
-		this.port = port;
-		notifyAll();
-	}
-
-	public synchronized int getPort() {
-		return port;
-	}
-
-	public synchronized void setClientSocket(Socket clientSocket) {
-		this.clientSocket = clientSocket;
-		synchStreams();
-		readRequest();
-		readHeader();
-
-		notifyAll();
-	}
-
-	private synchronized void synchStreams() {
+	/**
+	 * public synchronized void setClientSocket(Socket clientSocket) {
+	 * this.clientSocket = clientSocket; synchStreams(); readRequest();
+	 * readHeader();
+	 * 
+	 * notifyAll(); }
+	 */
+	public synchronized void synchStreams() {
 		try {
 
 			is = clientSocket.getInputStream();
@@ -79,7 +120,7 @@ public class ServerMonitor {
 		}
 	}
 
-	private synchronized String readHeader() {
+	public synchronized String readHeader() {
 		try {
 			// The request is followed by some additional header lines,
 			// followed by a blank line. Those header lines are ignored.
@@ -102,7 +143,7 @@ public class ServerMonitor {
 		}
 	}
 
-	private synchronized String readRequest() {
+	public synchronized String readRequest() {
 		// gives the request to the writer
 		// Read the request
 		try {
@@ -138,20 +179,23 @@ public class ServerMonitor {
 	public synchronized int getCameraNbr() {
 		return cameraNbr;
 	}
-//Hopefully its ok to add 1 to have spaceship for cameraNbr
-	public static int BUFFER_LENGTH = AxisM3006V.IMAGE_BUFFER_SIZE
-			+ AxisM3006V.TIME_ARRAY_SIZE + 1;
 
-	public synchronized byte[] packageMessage(int cameraNbr, byte[] time,
-			byte[] image) {
-		ByteBuffer bb = ByteBuffer.allocate(BUFFER_LENGTH);
-		bb.put(time);
-		bb.putInt(cameraNbr);
-		bb.put(image);
-		byte[] message = new byte[bb.capacity()];
-		bb.get(message, 0, message.length);
-		return message;
+	public synchronized void setMovieMode(boolean movieMode) {
+		this.movieMode = movieMode;
+		notifyAll();
+	}
 
+	public synchronized boolean getMovieMode() {
+		return movieMode;
+	}
+
+	public synchronized void setPort(int port) {
+		this.port = port;
+		notifyAll();
+	}
+
+	public synchronized int getPort() {
+		return port;
 	}
 
 	/**
@@ -163,7 +207,7 @@ public class ServerMonitor {
 		String result = "";
 
 		while (!done) {
-			int ch = s.read(); // Read
+			int ch = s.read(); // Read *** blocks until data is available YAAAAY
 			if (ch <= 0 || ch == 10) {
 				// Something < 0 means end of data (closed socket)
 				// ASCII 10 (line feed) means end of line
