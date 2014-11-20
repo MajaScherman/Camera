@@ -31,9 +31,17 @@ public class ServerMonitor {
 	private int port;
 	private boolean movieMode;
 	private AxisM3006V camera;
-	private String header;
+	//private String header;
 	private int cameraNbr;
 	private ServerSocket serverSocket;
+	private boolean closed;
+	private byte[] header;
+	private int command;
+
+	// Hopefully its ok to add 3*4 for our spaceship
+	public static int BUFFER_LENGTH = AxisM3006V.IMAGE_BUFFER_SIZE
+			+ AxisM3006V.TIME_ARRAY_SIZE + 4 * 3;
+	public static int MESSAGE_SIZE = 4; 
 
 	public ServerMonitor(int port, int cameraNbr) {
 		this.cameraNbr = cameraNbr;
@@ -41,6 +49,7 @@ public class ServerMonitor {
 		camera = new AxisM3006V();
 		camera.init();
 		camera.setProxy("argus-1.student.lth.se", port);
+		header = new byte[MESSAGE_SIZE];
 
 		try {
 			serverSocket = new ServerSocket(port);
@@ -48,6 +57,14 @@ public class ServerMonitor {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+
+	public synchronized void setCloseConnection(boolean closed) {
+		this.closed = closed;
+	}
+
+	public synchronized boolean shouldCloseConnection() {
+		return closed;
 	}
 
 	public synchronized void closeConnection() {
@@ -65,15 +82,12 @@ public class ServerMonitor {
 			os.write(packet);
 			os.flush();
 		} catch (IOException e) {
-			// TODO What happens here when the connection is closed? will it block the sending of images or do we need to handle this?
+			// TODO What happens here when the connection is closed? will it
+			// block the sending of images or do we need to handle this?
 			e.printStackTrace();
 		}
 
 	}
-
-	// Hopefully its ok to add 3*4 for our spaceship
-	public static int BUFFER_LENGTH = AxisM3006V.IMAGE_BUFFER_SIZE
-			+ AxisM3006V.TIME_ARRAY_SIZE + 4 * 3;
 
 	public synchronized byte[] packageImage(int type, int size, int cameraNbr,
 			byte[] time, byte[] image) {
@@ -120,7 +134,14 @@ public class ServerMonitor {
 		}
 	}
 
-	public synchronized String readHeader() {
+	/**
+	 * I believe this method is wrongly implemented with our new header, maybe
+	 * WIIIIIIIIIIIHOOOOOOOOOOOOOO XDXDXD hälsar emnup
+	 * 
+	 * @return
+	 */
+	/*
+	public synchronized String readHeaderbsjfnwrhb() {
 		try {
 			// The request is followed by some additional header lines,
 			// followed by a blank line. Those header lines are ignored.
@@ -142,6 +163,34 @@ public class ServerMonitor {
 							// finns inte någon header
 		}
 	}
+	*/
+	
+	/*
+	 * We say that the package only have 1 int information, thus 4 byte size to represent the different commands
+	 */
+
+	public synchronized void readMessage() {
+		
+		try {
+			is.read(header);
+			
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			
+		}
+
+	}
+	public synchronized void updateValuesFromMessage(){
+		updateCommand();
+	}
+	private synchronized void updateCommand(){
+		ByteBuffer bb= ByteBuffer.wrap(header);
+		command = bb.getInt();
+		
+	}
+	
 
 	public synchronized String readRequest() {
 		// gives the request to the writer
@@ -159,11 +208,11 @@ public class ServerMonitor {
 	public synchronized String getRequest() {
 		return request;
 	}
-
+/*
 	public synchronized String getHeader() {
 		return header;
 	}
-
+*/
 	public synchronized Socket getClientSocket() {
 		return clientSocket;
 	}
