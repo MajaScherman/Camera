@@ -65,7 +65,7 @@ public class ServerMonitor {
 			os.write(packet);
 			os.flush();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			// TODO What happens here when the connection is closed? will it block the sending of images or do we need to handle this?
 			e.printStackTrace();
 		}
 
