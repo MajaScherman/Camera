@@ -20,12 +20,7 @@ public class TestServer {
 
 
 
-	@Test
-	public void testSetCloseConnection() {
-		
-		fail("Not yet implemented");
-	}
-
+	
 	@Test
 	public void testShouldCloseConnection() {
 		fail("Not yet implemented");
@@ -57,27 +52,17 @@ public class TestServer {
 	}
 
 	@Test
-	public void testSynchStreams() {
+	public void testSetStreams() {
 		fail("Not yet implemented");
 	}
 
 	@Test
-	public void testReadMessage() {
+	public void testReadAndUnpackCommand() {
 		fail("Not yet implemented");
 	}
 
 	@Test
-	public void testUpdateValuesFromMessage() {
-		fail("Not yet implemented");
-	}
-
-	@Test
-	public void testReadRequest() {
-		fail("Not yet implemented");
-	}
-
-	@Test
-	public void testGetRequest() {
+	public void testRunCommand() {
 		fail("Not yet implemented");
 	}
 
@@ -103,25 +88,16 @@ public class TestServer {
 	}
 
 	@Test
-	public void testSetMovieMode() {
-		
-		
-		fail("Not yet implemented");
+	public void testSetAndGetMovieMode() {
+		mon.setMovieMode(true);
+		assertTrue("Movie move not correct", mon.getMovieMode());
 	}
 
-	@Test
-	public void testGetMovieMode() {
-		fail("Not yet implemented");
-	}
 
 	@Test
-	public void testSetPort() {
-		fail("Not yet implemented");
-	}
-
-	@Test
-	public void testGetPort() {
-		assertEquals("hej",mon.getPort(), 6876);
+	public void testSetAndGetPort() {
+		mon.setPort(6789);
+		assertEquals("Wrong port nbr",6789,mon.getPort());
 		
 		
 	}

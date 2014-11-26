@@ -20,6 +20,7 @@ public class ServerReader extends Thread {
 		// connection and disconnection
 		while (true) {
 			mon.acceptClient();
+			mon.setStreams();
 
 			while (!mon.shouldCloseConnection()) {// until terminate, inner while loop which handles the
 							// actions which should be performed when
@@ -28,9 +29,10 @@ public class ServerReader extends Thread {
 							// changes a boolean which let's us leave the inner
 							// loop.
 
-				mon.synchStreams();
-				mon.readRequest();
-				mon.readMessage();
+				
+				//mon.readRequest();
+				mon.readAndUnpackCommand();
+				mon.runCommand();
 			}
 			mon.closeConnection();
 			

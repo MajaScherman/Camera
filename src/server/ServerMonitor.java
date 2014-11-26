@@ -35,7 +35,7 @@ public class ServerMonitor {
 	private int cameraNbr;
 	private ServerSocket serverSocket;
 	private boolean closed;
-	private byte[] header;
+	
 	private int command;
 	
 
@@ -50,7 +50,7 @@ public class ServerMonitor {
 		camera = new AxisM3006V();
 		camera.init();
 		camera.setProxy("argus-1.student.lth.se", port);
-		header = new byte[MESSAGE_SIZE];
+		
 
 		try {
 			serverSocket = new ServerSocket(port);
@@ -59,10 +59,10 @@ public class ServerMonitor {
 			e.printStackTrace();
 		}
 	}
-
-	public synchronized void setCloseConnection(boolean closed) {
-		this.closed = closed;
-	}
+	/**
+	 * This part we must change !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	 * @param closed
+	 */
 
 	public synchronized boolean shouldCloseConnection() {
 		return closed;
@@ -90,8 +90,18 @@ public class ServerMonitor {
 
 	}
 
+	/**
+	 * Collects the necessary information about the image and puts it into a byte array.
+	 * @param type , Tells the client what the package contains, in this case an image.
+	 * @param size , size of image.
+	 * @param cameraNbr , Tells from which camera the package is sent.
+	 * @param time , At which time the image was taken.
+	 * @param image , The image itself.
+	 * @return
+	 */
 	public synchronized byte[] packageImage(int type, int size, int cameraNbr,
 			byte[] time, byte[] image) {
+		
 		ByteBuffer bb = ByteBuffer.allocate(BUFFER_LENGTH);
 		bb.putInt(type);
 		bb.putInt(size);
@@ -104,10 +114,12 @@ public class ServerMonitor {
 
 	}
 
-	public synchronized ServerSocket getServerSocket() {
-		return serverSocket;
-	}
+//	public synchronized ServerSocket getServerSocket() {
+//		return serverSocket;
+//	}
 
+	
+	 	 
 	public synchronized void acceptClient() {
 		try {
 			clientSocket = serverSocket.accept();
@@ -125,9 +137,8 @@ public class ServerMonitor {
 	 * 
 	 * notifyAll(); }
 	 */
-	public synchronized void synchStreams() {
+	public synchronized void setStreams() {
 		try {
-
 			is = clientSocket.getInputStream();
 			os = clientSocket.getOutputStream();
 		} catch (IOException e) {
@@ -135,60 +146,44 @@ public class ServerMonitor {
 		}
 	}
 
-	/**
-	 * I believe this method is wrongly implemented with our new header, maybe
-	 * WIIIIIIIIIIIHOOOOOOOOOOOOOO XDXDXD hälsar emnup
-	 * 
-	 * @return
-	 */
-
-	/*
-	 * We say that the package only have 1 int information, thus 4 byte size to represent the different commands
-	 */
-
-	public synchronized void readMessage() {
-		
-		try {
-			is.read(header);
-			
-
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			
-		}
-
-	}
-	public synchronized void updateValuesFromMessage(){
-		updateCommand();
-	}
-	private synchronized void updateCommand(){
-		ByteBuffer bb= ByteBuffer.wrap(header);
-		command = bb.getInt();
-	}
 	
 
-	public synchronized String readRequest() {
-		// gives the request to the writer
-		// Read the request
+	/**
+	 * Reads the message received from the client. The package only contains 1 int to represent commands.
+	 * Therefor the size of the package is only 4 bytes.
+	 */
+
+	
+	
+	public synchronized void readAndUnpackCommand(){
+		byte[] message = new byte[MESSAGE_SIZE];
 		try {
-			request = getLine(is);
+			is.read(message);
 		} catch (IOException e) {
-			System.out.println("Caught exception " + e);
 			e.printStackTrace();
+			
 		}
-		return request;
+		ByteBuffer bb= ByteBuffer.wrap(message);
+		command = bb.getInt();
 
+		notifyAll();
+	}
+	
+	
+	/**
+	 * Interprets the command and performs the correct actions.
+	 */
+	public synchronized void runCommand(){
+		switch(command){
+		case 0: closed = true; break;
+		case 1: setMovieMode(true); break;
+		case 2: setMovieMode(false); break;
+		}
+		notifyAll();
 	}
 
-	public synchronized String getRequest() {
-		return request;
-	}
-/*
-	public synchronized String getHeader() {
-		return header;
-	}
-*/
+
+
 	public synchronized Socket getClientSocket() {
 		return clientSocket;
 	}
