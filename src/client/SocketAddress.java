@@ -1,7 +1,7 @@
 package client;
 
 public class SocketAddress {
-	private String address;
+	private String host;
 	private int portNumber;
 
 	/**
@@ -10,12 +10,12 @@ public class SocketAddress {
 	 * @param port The port number of the server
 	 */
 	public SocketAddress(String addr, int port){
-		address = addr;
+		host = addr;
 		portNumber = port;
 	}
 	
-	public String getAddress(){
-		return address;
+	public String getHost(){
+		return host;
 	}
 	
 	public int getPortNumber(){

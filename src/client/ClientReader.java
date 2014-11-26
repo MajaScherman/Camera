@@ -16,7 +16,12 @@ public class ClientReader extends Thread {
 
 	public void Run() {
 		while (!isInterrupted()) {
-		monitor.listenToServer(serverNumber);
+		try {
+			monitor.listenToServer(serverNumber);
+		} catch (Exception e) {
+			System.out.println("Listentoserver in monitor is mean :(");
+			e.printStackTrace();
+		}
 		}	
 	}
 }

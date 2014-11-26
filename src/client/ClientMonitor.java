@@ -5,22 +5,54 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 
 public class ClientMonitor {
 	private String command;
 	private String image;
 	private boolean syncMode;
 	private boolean movieMode;
+	/**
+	 * Attributes for updating GUI
+	 */
 	private boolean updateGUI;
-	private Socket[] socketArray;
-	private SocketAddress[] socketAddresses;
+	private boolean newImage; // The updater checks if a new image has arrived
+								// in data
+	private boolean newMode; // The updater checks if a new mode has arrived in
+								// data
+	/**
+	 * Attributes for connecting
+	 */
+	private Socket[] socket;
+	private SocketAddress[] socketAddress;
+	private boolean[] isConnected;
+	private InputStream[] inputStream;
+	private OutputStream[] outputStream;
+	/**
+	 * Header attributes
+	 */
+	private byte[] byteToInt; // byte array with size 4, with purpose to
+								// transform tó int
+	private int type;
+	private int size;
+	private int cameraNumber;
+	private byte[] timeStamp;
+	/**
+	 * Data in packets
+	 */
+	private byte[] data;
 
 	public ClientMonitor(int nbrOfSockets, SocketAddress[] socketAddr) {
 		syncMode = false;
 		movieMode = false;
 		updateGUI = false;
-		socketAddresses = socketAddr;
-		socketArray = new Socket[nbrOfSockets];
+		socketAddress = socketAddr;
+		socket = new Socket[nbrOfSockets];
+		isConnected = new boolean[nbrOfSockets];
+		inputStream = new InputStream[nbrOfSockets];
+		outputStream = new OutputStream[nbrOfSockets];
+		byteToInt = new byte[4];
+		timeStamp = new byte[8];
 	}
 
 	/**
@@ -43,7 +75,11 @@ public class ClientMonitor {
 				e.printStackTrace();
 			}
 		}
-		// TODO do something
+		if (newImage) {
+			newImage = false;
+		} else if (newMode) {
+			newMode = false;
+		}
 		updateGUI = false;
 	}
 
@@ -93,165 +129,163 @@ public class ClientMonitor {
 		movieMode = true;
 		notifyAll();
 		return movieMode;
-
 	}
 
 	/**
-	 * This method recieves messages from the server.
+	 * Establishes connection to server
+	 * 
+	 * @param serverIndex
+	 *            the index of the server we want to connect to (start from
+	 *            index 0 and goes up to socketArray.length)
+	 */
+	public synchronized void connectToServer(int serverIndex) {
+		if (!(serverIndex > 0 && serverIndex < socket.length)) {
+			// TODO Throw exception
+			System.out.println("The server index is out of range, "
+					+ "please give a value between 0 and " + socket.length);
+		} else if (isConnected[serverIndex]) {
+			System.out.println("The server is already connected");
+		} else {
+			// Establish connection
+			// Server must be running before trying to connect
+			String host = socketAddress[serverIndex].getHost();
+			int port = socketAddress[serverIndex].getPortNumber();
+			try {
+				socket[serverIndex] = new Socket(host, port);
+				// Set socket to no send delay
+				socket[serverIndex].setTcpNoDelay(true);
+				// Get input stream
+				inputStream[serverIndex] = socket[serverIndex].getInputStream();
+				// Get output stream
+				outputStream[serverIndex] = socket[serverIndex]
+						.getOutputStream();
+				isConnected[serverIndex] = true;
+				notifyAll();
+				System.out.println("Server connection with server "
+						+ serverIndex + " established");
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	/**
+	 * Disconnects to the server
+	 * 
+	 * @param serverIndex
+	 *            the index of the server one wants to disconnect to
+	 */
+	public synchronized void disconnectToServer(int serverIndex) {
+		if (!(serverIndex > 0 && serverIndex < socket.length)) {
+			// TODO Throw exception
+			System.out.println("The server index is out of range, "
+					+ "please give a value between 0 and " + socket.length);
+		} else if (!isConnected[serverIndex]) {
+			System.out.println("The server with index " + serverIndex
+					+ " is not connected");
+		} else {
+			// Close the socket, i.e. abort the connection
+			try {
+				socket[serverIndex].close();
+				isConnected[serverIndex] = false;
+				notifyAll();
+				System.out.println("Disconnected to server" + serverIndex
+						+ " successfully");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	/**
+	 * This method receives messages from the server.
 	 * 
 	 * @param server
 	 *            The server to listen to starting from index 0
+	 * @throws Exception
 	 */
-	public void listenToServer(int server) {
+	public synchronized void listenToServer(int serverIndex) throws Exception {
+		// TODO Kolla att serverindex är inom bounds
 		try {
-
-			// Establish connection
-			// Server must be running before trying to connect
-			String host = socketAddresses[server].getAddress();
-			int port = socketAddresses[server].getPortNumber();
-			socketArray[server] = new Socket(host, port);
-
-			// Get input stream
-			InputStream is = socketArray[server].getInputStream();
-
-			byte[] data = new byte[8192];
-
+			while (!isConnected[serverIndex]) {
+				wait();
+			}
 			// Read header - read is blocking
-			byte hi = (byte) is.read();
-			// If read returns -1 then end-of-stream has been reached
-			if (hi == -1)
-				throw new IOException("End of stream");
-			byte lo = (byte) is.read();
-			if (lo == -1)
-				throw new IOException("End of stream");
-
-			// Calculate size of package
-			// Byte is signed. & 0xFF creates an int from the byte bit pattern,
-			// allowing
-			// for interpretation of byte values in the range 0-254. Leave 255
-			// as it is
-			// used to indicate end-of-stream in read().
-			int size = (hi & 0xFF) * 255 + (lo & 0xFF);
-
-			// Read package
-			int read = 0; // Number of read bytes so far
-			while (read != size) {
-				// Read bytes and put in data array until size bytes are read
-				// Read returns number of bytes read <= size-read
-				int n = is.read(data, read, size - read);
-				if (n == -1)
-					throw new IOException("End of stream");
-				read += n;
+			type = readHeaderInts(serverIndex);
+			System.out.println("Type is " + type);
+			size = readHeaderInts(serverIndex);
+			System.out.println("Package size " + size);
+			cameraNumber = readHeaderInts(serverIndex);
+			System.out.println("Camera number is " + cameraNumber);
+			inputStream[serverIndex].read(timeStamp);
+			System.out.println("Timestamp is " + timeStamp);
+			if (type == 0) {
+				readPackage(serverIndex);
+				newImage = true;
+				updateGUI = true;
+				notifyAll();
+			} else if (type == 1) {
+				readPackage(serverIndex);
+				newMode = true;
+				updateGUI = true;
+				notifyAll();
+			} else {
+				throw new Exception();
 			}
-
-			// Verify that the package was received correctly
-			// by looking at the last 100 bytes
-			boolean ok = true;
-			for (int j = 0; j < 100; j++) {
-				if (data[size - 1 - j] != 100 - j)
-					ok = false;
-			}
-			if (ok)
-				System.out.printf("Client: Received package of size %d ok\n",
-						size);
-			else
-				System.out.printf("Client: Did not receive package properly\n");
-
-			// Close socket
-			socketArray[server].close();
-
+			// TODO Skapa paket buffert så att updategui hinner uppdatera innan
+			// header attributen ändras.
+			// TODO verifiera att paket är korrekt
 		} catch (IOException e) {
 			// Occurs in read method of
 			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
+	}
 
+	private synchronized void readPackage(int serverIndex) throws IOException {
+		data = new byte[size];
+
+		// Read package
+		int read = 0; // Number of read bytes so far
+		while (read != size) {
+			// Read bytes and put in data array until size bytes are
+			// read
+			// Read returns number of bytes read <= size-read
+			int n;
+			try {
+				n = inputStream[serverIndex].read(data, read, size - read);
+				if (n == -1) {
+					throw new IOException("End of stream");
+				}
+				read += n;
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				throw new IOException(e);
+			}
+		}
+	}
+
+	private synchronized int readHeaderInts(int serverIndex) {
+
+		// Hämta fyra bytes
+		try {
+			inputStream[serverIndex].read(byteToInt);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		// Konvertera till int
+		ByteBuffer bb = ByteBuffer.wrap(byteToInt);
+		return bb.getInt();
 	}
 
 	/**
 	 * This method writes data to the server.
 	 */
-	public void writeToServer() {
-		try {
-			while (movieMode == false) {
+	public void writeToServer(int serverIndex) {
 
-			}
-			for (int server = 0; server < socketArray.length; server++) {
-				// Increase the probability that the server is accepting
-				// connections,
-				// it is *still* a race condition though
-				Thread.sleep(2000);
-
-				// Establish connection
-				// Server must be running before trying to connect
-				String host = socketAddresses[server].getAddress();
-				int port = socketAddresses[server].getPortNumber();
-				socketArray[server] = new Socket(host, port);
-
-				// Set socket to no send delay
-				socketArray[server].setTcpNoDelay(true);
-
-				// Get input stream
-				InputStream is = socketArray[server].getInputStream();
-
-				// Get output stream
-				OutputStream os = socketArray[server].getOutputStream();
-
-				// Send a random number of data packages of different sizes
-				// Assume a header of two bytes for encoding the package size
-				byte[] data = new byte[8192];
-				int pkg = (int) (Math.random() * 90 + 10);
-				for (int i = 0; i < pkg; i++) {
-
-					// Randomize size of package
-					int size = (int) (Math.random() * 8000 + 192);
-
-					// Fill package with zeros, except the last 100 bytes
-					byte count = 100;
-					for (int j = size - 1; j >= 0; j--) {
-						data[j] = count > 0 ? count-- : 0;
-					}
-
-					// Create header
-					byte hi = (byte) (size / 255);
-					byte lo = (byte) (size % 255);
-
-					// Send header
-					os.write(hi);
-					os.write(lo);
-
-					// Send package
-					os.write(data, 0, size);
-
-					// Flush data
-					os.flush();
-
-					// Wait for acknowledgment - read is blocking
-					int ack = is.read();
-					// If read returns -1 then end-of-stream has been reached
-					if (ack == -1)
-						throw new IOException("End of stream");
-					System.out
-							.printf("Client: Received ack from connection %d for package %d\n",
-									server, i);
-				}
-
-				// Close the socket, i.e. abort the connection
-				socketArray[server].close();
-			}
-
-		} catch (UnknownHostException e) {
-			// Occurs if the socket cannot find the host
-			e.printStackTrace();
-		} catch (IOException e) {
-			// Occurs if there is an error trying to connect to the host,
-			// or there is an error during the call to the write method.
-			//
-			// Example: the connection is closed on the server side, but
-			// the client is still trying to write data.
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			// Occurs if the sleep method is interrupted
-			e.printStackTrace();
-		}
 	}
 }
