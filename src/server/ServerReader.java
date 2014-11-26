@@ -30,7 +30,7 @@ public class ServerReader extends Thread {
 
 				mon.synchStreams();
 				mon.readRequest();
-				mon.readHeader();
+				mon.readMessage();
 			}
 			mon.closeConnection();
 			
