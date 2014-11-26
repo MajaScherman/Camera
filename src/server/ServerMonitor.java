@@ -37,6 +37,7 @@ public class ServerMonitor {
 	private boolean closed;
 	private byte[] header;
 	private int command;
+	
 
 	// Hopefully its ok to add 3*4 for our spaceship
 	public static int BUFFER_LENGTH = AxisM3006V.IMAGE_BUFFER_SIZE
@@ -140,31 +141,7 @@ public class ServerMonitor {
 	 * 
 	 * @return
 	 */
-	/*
-	public synchronized String readHeaderbsjfnwrhb() {
-		try {
-			// The request is followed by some additional header lines,
-			// followed by a blank line. Those header lines are ignored.
 
-			boolean cont = true;
-			do {
-				header = getLine(is);
-				cont = !(header.equals(""));
-			} while (cont);
-
-			System.out.println("HTTP request '" + request + "' received.");
-			notifyAll();
-			return header;
-
-		} catch (IOException e) {
-			System.out.println("Caught exception " + e);
-			notifyAll();
-			return null; // om det blir fel ev kommer hit om det blir tomt,
-							// finns inte någon header
-		}
-	}
-	*/
-	
 	/*
 	 * We say that the package only have 1 int information, thus 4 byte size to represent the different commands
 	 */
