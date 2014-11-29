@@ -8,8 +8,11 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
 public class ClientMonitor {
-	private String command;
 	private String image;
+	/**
+	 * Attributes for change of modes
+	 */
+	private int command;
 	private boolean syncMode;
 	private boolean movieMode;
 	/**
@@ -28,6 +31,7 @@ public class ClientMonitor {
 	private boolean[] isConnected;
 	private InputStream[] inputStream;
 	private OutputStream[] outputStream;
+	private int nbrOfSockets;
 	/**
 	 * Header attributes
 	 */
@@ -53,8 +57,46 @@ public class ClientMonitor {
 		outputStream = new OutputStream[nbrOfSockets];
 		byteToInt = new byte[4];
 		timeStamp = new byte[8];
+		this.nbrOfSockets = nbrOfSockets;
 	}
 
+	/**
+	 * Sends only an int to the server
+	 * 0=close connection 1=movieMode 2=idle 3=connect to server
+	 * 
+	 * @throws IOException
+	 * 
+	 */
+	public void sendMessageToServer(int command, int serverIndex)
+			throws IOException {
+		switch (command) {
+		case 0:
+			outputStream[serverIndex].write(command);
+
+			disconnectToServer(serverIndex);
+			break;
+		case 1:
+			outputStream[serverIndex].write(command);
+			movieMode = true;
+			break;
+		case 2:
+			outputStream[serverIndex].write(command);
+			movieMode = false;
+			break;
+		case 3:
+			outputStream[serverIndex].write(command);
+			connectToServer(serverIndex);
+			break;
+		}
+		notifyAll();
+	}
+
+	public synchronized int getCommand(){
+		return command;
+	}
+	public synchronized int getNbrOfSockets(){
+		return nbrOfSockets;
+	}
 	/**
 	 * Request to update the GUI, meaning an image has been sent and the update
 	 * should be notified.
@@ -81,56 +123,9 @@ public class ClientMonitor {
 			newMode = false;
 		}
 		updateGUI = false;
-	}
-
-	public void setResult() {
-		// The reader sets the command, if one has been received, according to
-		// the info received from the inputstream
-		// from the cilent socket. String getLine(InputStream s)?
-		// If image then the reader does not set the command. but sets the image
-	}
-
-	public String getToServerCommand() {
-		// The writer gets the command set by the reader.
-		// Combine with putLine(OutputStream s, String str)?
-		return command;
-
-	}
-
-	public String getFromServerCommand() {
-		// The writer gets the command set by the reader.
-		// Combine with putLine(OutputStream s, String str)?
-		return command;
-
-	}
-
-	public String getImage() {
-		// image is set by the reader if an image is received. This method is
-		// used by the updater which updates the GUI.
-		// The update continously calls getImage() to check if there's a new
-		// image.
-		// How to distinguish from which camera the image comes from?
-		return image;
-	}
-
-	public boolean checkSyncMode() {
-		// Checks if the cameras are in sync
-		// Updater uses this to check if they are synchronous and use this
-		// knowledge when displaying the images
-		return syncMode;
-
-	}
-
-	public synchronized boolean changeModeFlag() {
-		// Should be called by the reader when one camera has changed to movie
-		// mode.
-		// This should trigger the writer to tell the other cameras to change to
-		// movie mode as well.<z<
-		movieMode = true;
 		notifyAll();
-		return movieMode;
 	}
-
+	
 	/**
 	 * Establishes connection to server
 	 * 
@@ -198,6 +193,7 @@ public class ClientMonitor {
 			}
 		}
 	}
+	//TODO handle button to command stuff so we can get every command not only 2, and send it to writer thingeingingeee
 
 	/**
 	 * This method receives messages from the server.
@@ -225,11 +221,13 @@ public class ClientMonitor {
 				readPackage(serverIndex);
 				newImage = true;
 				updateGUI = true;
+				command =type;
 				notifyAll();
 			} else if (type == 1) {
 				readPackage(serverIndex);
 				newMode = true;
 				updateGUI = true;
+				command =type;
 				notifyAll();
 			} else {
 				throw new Exception();
@@ -286,6 +284,6 @@ public class ClientMonitor {
 	 * This method writes data to the server.
 	 */
 	public void writeToServer(int serverIndex) {
-
+		// TODO
 	}
 }
