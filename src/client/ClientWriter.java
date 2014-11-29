@@ -17,7 +17,7 @@ public class ClientWriter extends Thread {
 			int i;
 			for(i=0;i<mon.getNbrOfSockets();i++){
 			try {
-				mon.sendMessageToServer(mon.getCommand(), i);
+				mon.sendMessageToServer( i);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				System.out.println("failed to send message to server");

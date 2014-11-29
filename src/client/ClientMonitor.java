@@ -67,7 +67,7 @@ public class ClientMonitor {
 	 * @throws IOException
 	 * 
 	 */
-	public void sendMessageToServer(int command, int serverIndex)
+	public void sendMessageToServer( int serverIndex)
 			throws IOException {
 		switch (command) {
 		case 0:
@@ -84,16 +84,13 @@ public class ClientMonitor {
 			movieMode = false;
 			break;
 		case 3:
-			outputStream[serverIndex].write(command);
+			//outputStream[serverIndex].write(command);
 			connectToServer(serverIndex);
 			break;
 		}
 		notifyAll();
 	}
 
-	public synchronized int getCommand(){
-		return command;
-	}
 	public synchronized int getNbrOfSockets(){
 		return nbrOfSockets;
 	}
@@ -209,11 +206,11 @@ public class ClientMonitor {
 				wait();
 			}
 			// Read header - read is blocking
-			type = readHeaderInts(serverIndex);
+			type = readHeaderInt(serverIndex);
 			System.out.println("Type is " + type);
-			size = readHeaderInts(serverIndex);
+			size = readHeaderInt(serverIndex);
 			System.out.println("Package size " + size);
-			cameraNumber = readHeaderInts(serverIndex);
+			cameraNumber = readHeaderInt(serverIndex);
 			System.out.println("Camera number is " + cameraNumber);
 			inputStream[serverIndex].read(timeStamp);
 			System.out.println("Timestamp is " + timeStamp);
@@ -266,7 +263,7 @@ public class ClientMonitor {
 		}
 	}
 
-	private synchronized int readHeaderInts(int serverIndex) {
+	private synchronized int readHeaderInt(int serverIndex) {
 
 		// Hämta fyra bytes
 		try {
@@ -278,12 +275,5 @@ public class ClientMonitor {
 		// Konvertera till int
 		ByteBuffer bb = ByteBuffer.wrap(byteToInt);
 		return bb.getInt();
-	}
-
-	/**
-	 * This method writes data to the server.
-	 */
-	public void writeToServer(int serverIndex) {
-		// TODO
 	}
 }
