@@ -29,39 +29,8 @@ public class ServerWriter extends Thread {
 	}
 
 	public void run() {
-		while (true) { //
-			// metakod
-			// kolla om vi fått bild
-			// ev.uppdater mon
-			// skicka bild till client
-			// om upptäcka movement
-			// så uppdatera mon till moviemode
-			// sen meddela klienten att vi har fått movie mode
-
-			if (!terminated) { //if the connection is running do the following, otherwise wait.
-				length = camera.getJPEG(image, 0);// 0 is our offset
-				if (length != 0) {
-					// ev.uppdater mon
-					// skicka bild till client
-					camera.getTime(imageTime, 0);
-					byte[] message = mon.packageImage(0, length,
-							mon.getCameraNbr(), imageTime, image);
-					mon.sendPackage(message);
-
-				}
-				if (camera.motionDetected()) {
-					mon.setMovieMode(true);
-				}
-			} else {
-				try {
-					wait();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}
-
+		while (!isInterrupted()) { //
+			mon.write();
 	}
 
 }
