@@ -1,23 +1,20 @@
 package gui;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.GridLayout;
-import java.awt.Image;
+import java.awt.Label;
 
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.border.Border;
 
 import se.lth.cs.eda040.fakecamera.AxisM3006V;
 
 public class GUI extends JFrame {
-	private ImagePanel imagePanel;
+	private ImageViewer imView1, imView2;
 	private JFrame frame;
+	private InfoPanel infoPanel;
+	private ButtonPanel bpan;
 
 	private byte[] jpeg = new byte[AxisM3006V.IMAGE_BUFFER_SIZE];
 	
@@ -27,52 +24,34 @@ public class GUI extends JFrame {
 
 	public GUI() {
 		super();
-		//Label label = new Label("hej");
 		frame = new JFrame();
 		frame.setSize(1000, 600);
-		JLabel label = new JLabel("hej");
-		Border lowered = BorderFactory.createLoweredBevelBorder();
-		label.setBorder(lowered);
-		frame.getContentPane().setLayout(new GridLayout());
-		frame.getContentPane().add(new JLabel("Left"));
+		frame.getContentPane().setLayout(new GridLayout(2,2));
+		Border blackline = BorderFactory.createLineBorder(Color.black);
 		
-		frame.add(label);
-//		JPanel panel = new JPanel();
-//		panel.setBackground(Color.CYAN);
-//		panel.setSize(200, 200);
-//		frame.add(panel);
-//		imagePanel = new ImagePanel();
-//		this.getContentPane().setLayout(new BorderLayout());
-//		this.getContentPane().add(imagePanel, BorderLayout.NORTH);
-//		this.setLocationRelativeTo(null);
-//		this.pack();
-//		frame.add(imagePanel);
-		label.setVisible(true);
+		//Image panel for the first camera
+		imView1 = new ImageViewer();
+		imView1.setBackground(Color.GRAY);
+		imView1.setBorder(blackline);
+		frame.getContentPane().add(imView1);
+		
+		//Image panel for the second camera
+		imView2 = new ImageViewer();
+		imView2.setBackground(Color.GRAY);
+		imView2.setBorder(blackline);
+		frame.getContentPane().add(imView2);
+		
+		//The panel containing information about states
+		infoPanel = new InfoPanel();
+		frame.getContentPane().add(infoPanel);
+		
+		//Panel containing the buttons
+		bpan = new ButtonPanel();
+		frame.getContentPane().add(bpan);
 		frame.setVisible(true);
-//		refreshImage();
 	}
 
-	public void refreshImage() {
-		imagePanel.refresh(jpeg);
-	}
+	
 
 }
 
-class ImagePanel extends JPanel {
-	ImageIcon icon;
-
-	public ImagePanel() {
-		super();
-		icon = new ImageIcon();
-		JLabel label = new JLabel(icon);
-		add(label, BorderLayout.CENTER);
-		this.setSize(200, 200);
-	}
-
-	public void refresh(byte[] data) {
-		Image theImage = getToolkit().createImage(data);
-		getToolkit().prepareImage(theImage, -1, -1, null);
-		icon.setImage(theImage);
-		icon.paintIcon(this, this.getGraphics(), 5, 5);
-	}
-}
