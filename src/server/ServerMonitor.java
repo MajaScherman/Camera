@@ -158,67 +158,44 @@ public class ServerMonitor {
 	// return result;
 	// }
 	public void write() {
-		while (!isConnected) {
-			try {
+		try {
+			while (!isConnected) {
 				wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
 			}
-		}
-		byte[] message = getImage();
-		if (movieMode) {
-
-			if(message != null){
-				try {
+			byte[] message = getImage();
+			if (movieMode) {
+				if (message != null) {
 					os.write(message);
 					lastTimeSentImg = System.currentTimeMillis();
-				} catch (IOException e) {
-					System.out.println("Message could not be sent in movie mode");
-					e.printStackTrace();
 				}
-				
-			}
-		} else {
-			if(System.currentTimeMillis() - lastTimeSentImg>=5000){
-				try {
+			} else {
+				if (System.currentTimeMillis() - lastTimeSentImg >= 5000) {
 					os.write(message);
-				} catch (IOException e) {
-					System.out.println("Message could not be sent in idle mode");
-					e.printStackTrace();
-				}
-				lastTimeSentImg = System.currentTimeMillis();
-			}else{
-				 long t = lastTimeSentImg + 5000;
-				 long diff = t - System. currentTimeMillis ();
-				 if (diff > 0) {
-					 try {
+					lastTimeSentImg = System.currentTimeMillis();
+				} else {
+					long t = lastTimeSentImg + 5000;
+					long diff = t - System.currentTimeMillis();
+					if (diff > 0) {
 						Thread.sleep(diff);
-					} catch (InterruptedException e1) {
-						e1.printStackTrace();
+						os.write(message);
 					}
-						try {
-							os.write(message);
-						} catch (IOException e) {
-							System.out.println("Message could not be sent in idle mode");
-							e.printStackTrace();
-						}
-				 }
 				}
-			
-
+				motionDetection();	
+			}
+		} catch (Exception e) {
+			System.out.println("Message could not be sent");
+			e.printStackTrace();
 		}
-		// metakod
-		// kolla om vi fått bild
-		// ev.uppdater mon
-		// skicka bild till client
-		// om upptäcka movement
-		// så uppdatera mon till moviemode
-		// sen meddela klienten att vi har fått movie mode
 
-		
-		 if (camera.motionDetected()) {
-		 }
 	}
+
+	// metakod
+	// kolla om vi fått bild
+	// ev.uppdater mon
+	// skicka bild till client
+	// om upptäcka movement
+	// så uppdatera mon till moviemode
+	// sen meddela klienten att vi har fått movie mode
 
 	private synchronized byte[] getImage() {
 		byte[] image = new byte[AxisM3006V.IMAGE_BUFFER_SIZE];
@@ -228,7 +205,7 @@ public class ServerMonitor {
 			// ev.uppdater mon
 			// skicka bild till client
 			camera.getTime(imageTime, 0);
-			byte[] message = packageImage(0, length, cameraNbr, imageTime,
+			byte[] message = packageData(0, length, cameraNbr, imageTime,
 					image);
 			return message;
 		}
@@ -240,30 +217,45 @@ public class ServerMonitor {
 	 * byte array.
 	 * 
 	 * @param type
-	 *            , Tells the client what the package contains, in this case an
-	 *            image.
+	 *            , Tells the client what the package contains, 0 = image 1=
+	 *            command
 	 * @param size
 	 *            , size of image.
 	 * @param cameraNbr
 	 *            , Tells from which camera the package is sent.
 	 * @param time
 	 *            , At which time the image was taken.
-	 * @param image
-	 *            , The image itself.
+	 * @param data
+	 * 
 	 * @return
 	 */
-	private synchronized byte[] packageImage(int type, int size, int cameraNbr,
-			byte[] time, byte[] image) {
+	private synchronized byte[] packageData(int type, int size, int cameraNbr,
+			byte[] time, byte[] data) {
 
 		ByteBuffer bb = ByteBuffer.allocate(BUFFER_LENGTH);
 		bb.putInt(type);
 		bb.putInt(size);
 		bb.putInt(cameraNbr);// 4 bytes for every int
 		bb.put(time);
-		bb.put(image);
+		bb.put(data);// image or command
 		byte[] message = new byte[bb.capacity()];
 		bb.get(message, 0, message.length);
 		return message;
 
 	}
+
+	private synchronized void motionDetection() throws IOException {
+		if (camera.motionDetected()) {
+			movieMode = true;
+			byte[] latestImgTime = new byte[AxisM3006V.TIME_ARRAY_SIZE];
+			ByteBuffer bb = ByteBuffer.allocate(4);
+
+			camera.getTime(latestImgTime, 0);
+
+			os.write(packageData(1, 4, cameraNbr, latestImgTime, bb.putInt(1)
+					.array()));
+		} 
+
+	}
+
 }
