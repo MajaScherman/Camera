@@ -162,7 +162,6 @@ public class ServerMonitor {
 			try {
 				wait();
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -192,7 +191,11 @@ public class ServerMonitor {
 				 long t = lastTimeSentImg + 5000;
 				 long diff = t - System. currentTimeMillis ();
 				 if (diff > 0) {
-					 Thread.sleep(diff);
+					 try {
+						Thread.sleep(diff);
+					} catch (InterruptedException e1) {
+						e1.printStackTrace();
+					}
 						try {
 							os.write(message);
 						} catch (IOException e) {
@@ -201,7 +204,6 @@ public class ServerMonitor {
 						}
 				 }
 				}
-			}
 			
 
 		}
@@ -216,9 +218,6 @@ public class ServerMonitor {
 		
 		 if (camera.motionDetected()) {
 		 }
-		
-		
-
 	}
 
 	private synchronized byte[] getImage() {

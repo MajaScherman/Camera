@@ -81,25 +81,25 @@ public class TestServer {
 		fail("Not yet implemented");
 	}
 
-	@Test
-	public void testGetCameraNbr() {
-		assertEquals("Wrong camera nbr",1,mon.getCameraNbr());
-	
-	}
+//	@Test
+//	public void testGetCameraNbr() {
+//		assertEquals("Wrong camera nbr",1,mon.getCameraNbr());
+//	
+//	}
 
-	@Test
-	public void testSetAndGetMovieMode() {
-		mon.setMovieMode(true);
-		assertTrue("Movie move not correct", mon.getMovieMode());
-	}
+//	@Test
+//	public void testSetAndGetMovieMode() {
+//		mon.setMovieMode(true);
+//		assertTrue("Movie move not correct", mon.getMovieMode());
+//	}
 
 
-	@Test
-	public void testSetAndGetPort() {
-		mon.setPort(6789);
-		assertEquals("Wrong port nbr",6789,mon.getPort());
-		
-		
-	}
+//	@Test
+//	public void testSetAndGetPort() {
+//		mon.setPort(6789);
+//		assertEquals("Wrong port nbr",6789,mon.getPort());
+//		
+//		
+//	}
 
 }

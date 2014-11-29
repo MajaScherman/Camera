@@ -18,19 +18,19 @@ public class ServerWriter extends Thread {
 	private byte[] image;
 	private byte[] imageTime;
 	private int length;
-	private boolean terminated; //temp variable to avoid red repo
-	
+	private boolean terminated; // temp variable to avoid red repo
+
 	public ServerWriter(ServerSocket serverSocket, ServerMonitor mon,
 			AxisM3006V camera) {
 		this.serverSocket = serverSocket;
 		this.mon = mon;
 		this.camera = camera;
-		terminated = false; //temp variable to avoid red repo
+		terminated = false; // temp variable to avoid red repo
 	}
 
 	public void run() {
 		while (!isInterrupted()) { //
 			mon.write();
+		}
 	}
-
 }
