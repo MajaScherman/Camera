@@ -38,13 +38,20 @@ public class ClientMonitor {
 	private byte[] byteToInt; // byte array with size 4, with purpose to
 								// transform tó int
 	private int type;
+	public static final int IMAGE = 0;
+	public static final int COMMAND = 1;
 	private int size;
 	private int cameraNumber;
 	private byte[] timeStamp;
+	
 	/**
 	 * Data in packets
 	 */
 	private byte[] data;
+	public static final int CLOSE_CONNECTION = 0;
+	public static final int MOVIE_MODE = 1;
+	public static final int IDLE = 2;
+	public static final int START_CONNECTION = 3;
 
 	public ClientMonitor(int nbrOfSockets, SocketAddress[] socketAddr) {
 		syncMode = false;
@@ -70,20 +77,19 @@ public class ClientMonitor {
 	public void sendMessageToServer( int serverIndex)
 			throws IOException {
 		switch (command) {
-		case 0:
+		case CLOSE_CONNECTION:
 			outputStream[serverIndex].write(command);
-
 			disconnectToServer(serverIndex);
 			break;
-		case 1:
+		case MOVIE_MODE:
 			outputStream[serverIndex].write(command);
 			movieMode = true;
 			break;
-		case 2:
+		case IDLE:
 			outputStream[serverIndex].write(command);
 			movieMode = false;
 			break;
-		case 3:
+		case START_CONNECTION:
 			//outputStream[serverIndex].write(command);
 			connectToServer(serverIndex);
 			break;
@@ -214,17 +220,17 @@ public class ClientMonitor {
 			System.out.println("Camera number is " + cameraNumber);
 			inputStream[serverIndex].read(timeStamp);
 			System.out.println("Timestamp is " + timeStamp);
-			if (type == 0) {
+			if (type == IMAGE) {
 				readPackage(serverIndex);
 				newImage = true;
 				updateGUI = true;
-				command =type;
+				command =type; //Wrong?
 				notifyAll();
-			} else if (type == 1) {
+			} else if (type == COMMAND) {
 				readPackage(serverIndex);
 				newMode = true;
 				updateGUI = true;
-				command =type;
+				command =type; //Wrong?
 				notifyAll();
 			} else {
 				throw new Exception();
