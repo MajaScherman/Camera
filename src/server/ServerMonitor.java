@@ -1,19 +1,9 @@
 package server;
-
-/*
- * Real-time and concurrent programming
- *
- * Minimalistic HTTP server solution.
- *
- * Package created by Patrik Persson, maintained by klas@cs.lth.se
- * Adapted for Axis cameras by Roger Henriksson 
- */
-
 import java.io.IOException;
-import java.io.InputStream; // Provides InputStream, OutputStream
+import java.io.InputStream; 
 import java.io.OutputStream;
 import java.net.ServerSocket;
-import java.net.Socket; // Provides ServerSocket, Socket
+import java.net.Socket; 
 import java.nio.ByteBuffer;
 
 import se.lth.cs.eda040.fakecamera.AxisM3006V; // Provides AxisM3006V
@@ -24,10 +14,8 @@ public class ServerMonitor {
 	 */
 	private ServerSocket serverSocket;
 	private Socket clientSocket;
-	private InputStream is; // the is from the client, is used as the os from
-							// the server
-	private OutputStream os; // the os from the client, is used as the is from
-								// the server
+	private InputStream is;
+	private OutputStream os;
 	private boolean isConnected;
 
 	/**
@@ -42,13 +30,20 @@ public class ServerMonitor {
 	private boolean movieMode;
 	private int command;
 	private long lastTimeSentImg;
+	
+	public static final int CLOSE_CONNECTION = 0;
+	public static final int MOVIE_MODE = 1;
+	public static final int IDLE = 2;
+	public static final int START_CONNECTION = 3;
+	
+	public static final int IMAGE = 0;
+	public static final int COMMAND = 1;
 
-	// Hopefully its ok to add 3*4 for our spaceship
+	// Hopefully its ok to add 3*4 for the type, cameraNbr, and size.
 	public static int BUFFER_LENGTH = AxisM3006V.IMAGE_BUFFER_SIZE
 			+ AxisM3006V.TIME_ARRAY_SIZE + 4 * 3;
 	public static int MESSAGE_SIZE = 4;
 
-	// add statics for commands
 
 	public ServerMonitor(int port, int cameraNbr) {
 		this.cameraNbr = cameraNbr;
@@ -59,7 +54,7 @@ public class ServerMonitor {
 		try {
 			serverSocket = new ServerSocket(port);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			System.out.println("ServerSocket could not be created in ServerMonitor constructor");
 			e.printStackTrace();
 		}
 	}
@@ -87,20 +82,19 @@ public class ServerMonitor {
 			try {
 				clientSocket.close();
 				serverSocket.close();
+				isConnected = false;
 			} catch (IOException e) {
 				System.out.println("Could not close connection");
 				e.printStackTrace();
 			}
 		}
+		notifyAll();
 	}
 
-	// public synchronized ServerSocket getServerSocket() {
-	// return serverSocket;
-	// }
 
 	/**
 	 * Reads the message received from the client. The package only contains 1
-	 * int to represent commands. Therefor the size of the package is only 4
+	 * int to represent commands. Therefore the size of the package is only 4
 	 * bytes.
 	 */
 
@@ -123,40 +117,22 @@ public class ServerMonitor {
 	 */
 	public synchronized void runCommand() {
 		switch (command) {
-		case 0:
+		case CLOSE_CONNECTION:
 			isConnected = false;
 			break;
-		case 1:
+		case MOVIE_MODE:
 			movieMode = true;
 			break;
-		case 2:
+		case IDLE:
 			movieMode = false;
 			break;
 		}
 		notifyAll();
 	}
-
 	/**
-	 * Read a line from InputStream 's', terminated by CRLF. The CRLF is not
-	 * included in the returned string.
+	 * While connected images are fetched and sent to the client at the given speed depending on if the MovieMode is active or not.
+	 * Checks if a motion was detected in the latest image, if so then MovieMode is activated and the client is informed.
 	 */
-	// private synchronized String getLine(InputStream s) throws IOException {
-	// boolean done = false;
-	// String result = "";
-	//
-	// while (!done) {
-	// int ch = s.read(); // Read *** blocks until data is available YAAAAY
-	// if (ch <= 0 || ch == 10) {
-	// // Something < 0 means end of data (closed socket)
-	// // ASCII 10 (line feed) means end of line
-	// done = true;
-	// } else if (ch >= ' ') {
-	// result += (char) ch;
-	// }
-	// }
-	//
-	// return result;
-	// }
 	public void write() {
 		try {
 			while (!isConnected) {
@@ -180,32 +156,25 @@ public class ServerMonitor {
 						os.write(message);
 					}
 				}
-				motionDetection();	
+				motionDetection();
+				notifyAll();
 			}
 		} catch (Exception e) {
 			System.out.println("Message could not be sent");
 			e.printStackTrace();
 		}
-
 	}
-
-	// metakod
-	// kolla om vi fått bild
-	// ev.uppdater mon
-	// skicka bild till client
-	// om upptäcka movement
-	// så uppdatera mon till moviemode
-	// sen meddela klienten att vi har fått movie mode
-
+/**
+ * Fetches the image from the camera, creates a package with a header and the image.
+ * @return message, the complete message with header and image. If no image was available then null is returned.
+ */
 	private synchronized byte[] getImage() {
 		byte[] image = new byte[AxisM3006V.IMAGE_BUFFER_SIZE];
 		byte[] imageTime = new byte[AxisM3006V.TIME_ARRAY_SIZE];
-		int length = camera.getJPEG(image, 0);// 0 is our offset
+		int length = camera.getJPEG(image, 0);
 		if (length != 0) {
-			// ev.uppdater mon
-			// skicka bild till client
 			camera.getTime(imageTime, 0);
-			byte[] message = packageData(0, length, cameraNbr, imageTime,
+			byte[] message = packageData(IMAGE, length, cameraNbr, imageTime,
 					image);
 			return message;
 		}
@@ -243,7 +212,10 @@ public class ServerMonitor {
 		return message;
 
 	}
-
+/**
+ * Checks if there was any motion detected and if so, then informs the client.
+ * @throws IOException, if the command informing the client of the detected motion was not sent.
+ */
 	private synchronized void motionDetection() throws IOException {
 		if (camera.motionDetected()) {
 			movieMode = true;
@@ -252,7 +224,7 @@ public class ServerMonitor {
 
 			camera.getTime(latestImgTime, 0);
 
-			os.write(packageData(1, 4, cameraNbr, latestImgTime, bb.putInt(1)
+			os.write(packageData(COMMAND, 4, cameraNbr, latestImgTime, bb.putInt(1)
 					.array()));
 		} 
 
