@@ -8,7 +8,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
 public class ClientMonitor {
-	private String image;
+
 	/**
 	 * Attributes for change of modes
 	 */
@@ -56,13 +56,13 @@ public class ClientMonitor {
 	/**
 	 * Attributes for handling images
 	 */
-	private byte[][] imageBuffer; // An image ring buffer containing 125
-									// "oneImage"
+	private Image[] imageBuffer; // An image ring buffer containing 125 Images
+
 	private int putAt;
 	private int getAt;
 	private int nbrOfImgsInBuffer;
-	private byte[][][] cameraImages; // Contains one image buffer for each
-										// camera
+	private Image[][] cameraImages; // Contains one image buffer for each
+									// camera
 	public static final int IMAGE_SIZE = 640 * 480 * 3; // REQ 7
 	public static final int IMAGE_BUFFER_SIZE = 125; // Supports 125 images,
 														// which is 5 seconds of
@@ -81,7 +81,7 @@ public class ClientMonitor {
 		byteToInt = new byte[4];
 		timeStamp = new byte[8];
 		this.nbrOfSockets = nbrOfSockets;
-		imageBuffer = new byte[IMAGE_SIZE][IMAGE_BUFFER_SIZE];
+		imageBuffer = new Image[IMAGE_BUFFER_SIZE];
 		getAt = putAt = nbrOfImgsInBuffer = 0;
 	}
 
@@ -113,12 +113,14 @@ public class ClientMonitor {
 		}
 		notifyAll();
 	}
-	
+
 	/**
-	 * used to  allow the buttonHandler to set the command depending on which button is pressed.
+	 * used to allow the buttonHandler to set the command depending on which
+	 * button is pressed.
+	 * 
 	 * @param command
 	 */
-	public synchronized void setCommand(int command){
+	public synchronized void setCommand(int command) {
 		this.command = command;
 	}
 
@@ -138,7 +140,7 @@ public class ClientMonitor {
 	/**
 	 * Tells the updater to update the GUI when time is due.
 	 */
-	public synchronized int checkUpdate() {
+	public synchronized int checkUpdate() throws Exception {
 		while (updateGUI == false) {
 			try {
 				wait();
@@ -155,9 +157,10 @@ public class ClientMonitor {
 			newMode = false;
 			notifyAll();
 			return COMMAND;
+		}else{
+			notifyAll();
+			throw new Exception("Check update method is wrong");
 		}
-		notifyAll();
-		return -1; //Something is wrong if -1 is sent
 	}
 
 	/**
@@ -254,22 +257,31 @@ public class ClientMonitor {
 			inputStream[serverIndex].read(timeStamp);
 			System.out.println("Timestamp is " + timeStamp);
 			if (type == IMAGE) {
-				readPackage(serverIndex);
+
+				Image image = new Image(cameraNumber, timeStamp,
+						readPackage(serverIndex));
 				newImage = true;
 				updateGUI = true;
-				putImageToBuffer(data);//data contains the image
+				putImageToBuffer(image);// data contains the image
 				notifyAll();
 			} else if (type == COMMAND) {
-				readPackage(serverIndex);
+				byte[] commandData = readPackage(serverIndex);
+				ByteBuffer bb = ByteBuffer.wrap(commandData);
+				int temp = bb.getInt();
+				if (temp < 0 || temp > 3) {
+					throw new Exception(
+							"You have recieved a command which is not between 0-3");
+
+				}
+				command = temp;
 				newMode = true;
 				updateGUI = true;
-				//om det finns en begäran på ett movie mode i paketet måste command sätts till MOVIEMODE
+				// om det finns en begäran på ett movie mode i paketet måste
+				// command sätts till MOVIEMODE
 				notifyAll();
 			} else {
 				throw new Exception();
 			}
-			// TODO Skapa paket buffert så att updategui hinner uppdatera innan
-			// header attributen ändras.
 			// TODO verifiera att paket är korrekt
 		} catch (IOException e) {
 			// Occurs in read method of
@@ -279,7 +291,7 @@ public class ClientMonitor {
 		}
 	}
 
-	private synchronized void readPackage(int serverIndex) throws IOException {
+	private synchronized byte[] readPackage(int serverIndex) throws IOException {
 		data = new byte[size];
 
 		// Read package
@@ -299,10 +311,12 @@ public class ClientMonitor {
 				// TODO Auto-generated catch block
 				throw new IOException(e);
 			}
+
 		}
+		return data;
 	}
 
-	private synchronized void putImageToBuffer(byte[] image) {
+	private synchronized void putImageToBuffer(Image image) {
 		imageBuffer[putAt] = image;
 		putAt++;
 		nbrOfImgsInBuffer++;
@@ -312,8 +326,8 @@ public class ClientMonitor {
 		notifyAll();
 	}
 
-	public synchronized byte[] getImageFromBuffer() {
-		while(nbrOfImgsInBuffer < 0){
+	public synchronized Image getImageFromBuffer() {
+		while (nbrOfImgsInBuffer < 0) {
 			try {
 				wait();
 			} catch (InterruptedException e) {
@@ -321,7 +335,7 @@ public class ClientMonitor {
 				e.printStackTrace();
 			}
 		}
-		byte[] image = imageBuffer[getAt];
+		Image image = imageBuffer[getAt];
 		getAt++;
 		nbrOfImgsInBuffer--;
 		if (getAt > 125) {

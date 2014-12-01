@@ -6,7 +6,6 @@ public class Updater extends Thread {
 	private ClientMonitor mon;
 	private GUI gui;
 
-	// check if there's a new image
 	public Updater(ClientMonitor mon, GUI gui) {
 		this.mon = mon;
 		this.gui = gui;
@@ -14,19 +13,19 @@ public class Updater extends Thread {
 
 	public void run() {
 		while (!isInterrupted()) {
-//			int type = mon.checkUpdate(); // Check if new image has arrived
-			// Here we know that its time to update the GUI with new image.
-			// So we should just refresh image in GUI.
-			// get image
-			// push image to gui
-//			if(type==image){
-			//TODO Fixa image struktur
-//				byte[] image = mon.getImageFromBuffer();
-//				gui.setImage(mon.getCameraIndex(),image);
-////				skicka timestamp eller delay till gui
-//			}else{
-//				push mode sträng grejs;
-//			}
+			int type = -1;
+			try {
+				type = mon.checkUpdate();
+			} catch (Exception e) {
+				System.out.println(e);
+				e.printStackTrace();
+			}
+			if (type == ClientMonitor.IMAGE) {
+				Image image = mon.getImageFromBuffer();
+				gui.setImage(image);
+			} else if (type == ClientMonitor.COMMAND) {
+				// TODO update modes an stuff
+			}
 		}
 	}
 }

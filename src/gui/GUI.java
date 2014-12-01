@@ -2,15 +2,15 @@ package gui;
 
 import java.awt.Color;
 import java.awt.GridLayout;
-import java.awt.Label;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.border.Border;
 
+import se.lth.cs.eda040.fakecamera.AxisM3006V;
 import client.ButtonHandler;
 import client.ClientMonitor;
-import se.lth.cs.eda040.fakecamera.AxisM3006V;
+import client.Image;
 
 public class GUI extends JFrame {
 	private ImageViewer imageViewer0, imageViewer1;
@@ -53,17 +53,17 @@ public class GUI extends JFrame {
 		frame.setVisible(true);
 	}
 
-	public void setImage(int cameraIndex, byte[] image) {
-		if (cameraIndex < 0 || cameraIndex > MAXIMUM_NUMBER_OF_CAMERAS) {
+	public void setImage(Image image) {
+		if (image.getCameraNbr() < 0 || image.getCameraNbr() > MAXIMUM_NUMBER_OF_CAMERAS) {
 			System.out.println("Camera index is out of range");
 			// TODO Throw exception
 		}
-		switch (cameraIndex) {
+		switch (image.getCameraNbr()) {
 		case 0:
-			imageViewer0.refresh(image);
+			imageViewer0.refresh(image.getImage());
 			break;
 		case 1:
-			imageViewer1.refresh(image);
+			imageViewer1.refresh(image.getImage());
 			break;
 		}
 
