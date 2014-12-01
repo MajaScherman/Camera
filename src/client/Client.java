@@ -4,7 +4,6 @@ import gui.GUI;
 
 public class Client {
 
-	ClientWriter writer;
 
 	public static void main(String[] args) {
 		SocketAddress adr1 = new SocketAddress("localhost", 7897);

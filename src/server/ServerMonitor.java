@@ -45,11 +45,11 @@ public class ServerMonitor {
 	public static int MESSAGE_SIZE = 4;
 
 
-	public ServerMonitor(int port, int cameraNbr,AxisM3006V camera ) {
+	public ServerMonitor(int port, String hostAddress, int cameraNbr,AxisM3006V camera ) {
 		this.cameraNbr = cameraNbr;
 		this.camera = camera;
 		camera.init();
-		camera.setProxy("argus-1.student.lth.se", port);
+		camera.setProxy(hostAddress, port);
 
 		try {
 			serverSocket = new ServerSocket(port);

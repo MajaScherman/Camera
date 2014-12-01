@@ -8,7 +8,7 @@ public class Server{
 	
 	public static void main(String[] args) {
 		AxisM3006V camera = new AxisM3006V();
-		ServerMonitor servMon = new ServerMonitor(0, 0,camera);
+		ServerMonitor servMon = new ServerMonitor(7897,"argus-1.student.lth.se", 0,camera);
 		ServerReader servReader = new ServerReader(servMon);
 		ServerWriter servWriter = new ServerWriter(servMon.getServerSocket(),servMon, camera);
 	}
