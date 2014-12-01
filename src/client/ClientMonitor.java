@@ -43,7 +43,7 @@ public class ClientMonitor {
 	private int size;
 	private int cameraNumber;
 	private byte[] timeStamp;
-	
+
 	/**
 	 * Data in packets
 	 */
@@ -52,6 +52,22 @@ public class ClientMonitor {
 	public static final int MOVIE_MODE = 1;
 	public static final int IDLE = 2;
 	public static final int START_CONNECTION = 3;
+
+	/**
+	 * Attributes for handling images
+	 */
+	private byte[][] imageBuffer; // An image ring buffer containing 125
+									// "oneImage"
+	private int putAt;
+	private int getAt;
+	private int nbrOfImgsInBuffer;
+	private byte[][][] cameraImages; // Contains one image buffer for each
+										// camera
+	public static final int IMAGE_SIZE = 640 * 480 * 3; // REQ 7
+	public static final int IMAGE_BUFFER_SIZE = 125; // Supports 125 images,
+														// which is 5 seconds of
+														// video in 25 fps
+	public static final int NUMBER_OF_CAMERAS = 2;
 
 	public ClientMonitor(int nbrOfSockets, SocketAddress[] socketAddr) {
 		syncMode = false;
@@ -65,17 +81,18 @@ public class ClientMonitor {
 		byteToInt = new byte[4];
 		timeStamp = new byte[8];
 		this.nbrOfSockets = nbrOfSockets;
+		imageBuffer = new byte[IMAGE_SIZE][IMAGE_BUFFER_SIZE];
+		getAt = putAt = nbrOfImgsInBuffer = 0;
 	}
 
 	/**
-	 * Sends only an int to the server
-	 * 0=close connection 1=movieMode 2=idle 3=connect to server
+	 * Sends only an int to the server 0=close connection 1=movieMode 2=idle
+	 * 3=connect to server
 	 * 
 	 * @throws IOException
 	 * 
 	 */
-	public void sendMessageToServer( int serverIndex)
-			throws IOException {
+	public void sendMessageToServer(int serverIndex) throws IOException {
 		switch (command) {
 		case CLOSE_CONNECTION:
 			outputStream[serverIndex].write(command);
@@ -90,16 +107,17 @@ public class ClientMonitor {
 			movieMode = false;
 			break;
 		case START_CONNECTION:
-			//outputStream[serverIndex].write(command);
+			// outputStream[serverIndex].write(command);
 			connectToServer(serverIndex);
 			break;
 		}
 		notifyAll();
 	}
 
-	public synchronized int getNbrOfSockets(){
+	public synchronized int getNbrOfSockets() {
 		return nbrOfSockets;
 	}
+
 	/**
 	 * Request to update the GUI, meaning an image has been sent and the update
 	 * should be notified.
@@ -112,7 +130,7 @@ public class ClientMonitor {
 	/**
 	 * Tells the updater to update the GUI when time is due.
 	 */
-	public synchronized void checkUpdate() {
+	public synchronized int checkUpdate() {
 		while (updateGUI == false) {
 			try {
 				wait();
@@ -120,15 +138,20 @@ public class ClientMonitor {
 				e.printStackTrace();
 			}
 		}
+		updateGUI = false;
 		if (newImage) {
 			newImage = false;
+			notifyAll();
+			return IMAGE;
 		} else if (newMode) {
 			newMode = false;
+			notifyAll();
+			return COMMAND;
 		}
-		updateGUI = false;
 		notifyAll();
+		return -1; //Something is wrong if -1 is sent
 	}
-	
+
 	/**
 	 * Establishes connection to server
 	 * 
@@ -196,7 +219,9 @@ public class ClientMonitor {
 			}
 		}
 	}
-	//TODO handle button to command stuff so we can get every command not only 2, and send it to writer thingeingingeee
+
+	// TODO handle button to command stuff so we can get every command not only
+	// 2, and send it to writer thingeingingeee
 
 	/**
 	 * This method receives messages from the server.
@@ -224,13 +249,13 @@ public class ClientMonitor {
 				readPackage(serverIndex);
 				newImage = true;
 				updateGUI = true;
-				command =type; //Wrong?
+				putImageToBuffer(data);//data contains the image
 				notifyAll();
 			} else if (type == COMMAND) {
 				readPackage(serverIndex);
 				newMode = true;
 				updateGUI = true;
-				command =type; //Wrong?
+				//om det finns en begäran på ett movie mode i paketet måste command sätts till MOVIEMODE
 				notifyAll();
 			} else {
 				throw new Exception();
@@ -267,6 +292,35 @@ public class ClientMonitor {
 				throw new IOException(e);
 			}
 		}
+	}
+
+	private synchronized void putImageToBuffer(byte[] image) {
+		imageBuffer[putAt] = image;
+		putAt++;
+		nbrOfImgsInBuffer++;
+		if (putAt > 125) {
+			putAt = 0;
+		}
+		notifyAll();
+	}
+
+	public synchronized byte[] getImageFromBuffer() {
+		while(nbrOfImgsInBuffer < 0){
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		byte[] image = imageBuffer[getAt];
+		getAt++;
+		nbrOfImgsInBuffer--;
+		if (getAt > 125) {
+			getAt = 0;
+		}
+		notifyAll();
+		return image;
 	}
 
 	private synchronized int readHeaderInt(int serverIndex) {
