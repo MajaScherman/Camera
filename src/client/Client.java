@@ -1,5 +1,7 @@
 package client;
 
+import gui.GUI;
+
 public class Client {
 
 	ClientWriter writer;
@@ -14,6 +16,10 @@ public class Client {
 		ClientReader cReader0 = new ClientReader(mon, 0);
 		ClientReader cReader1 = new ClientReader(mon, 1);
 		ClientWriter cWriter = new ClientWriter(mon, null);
+		
+		
+		GUI gui = new GUI(mon);
+		
 
 	}
 }

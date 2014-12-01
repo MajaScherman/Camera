@@ -6,13 +6,16 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 
 import client.ButtonHandler;
+import client.ClientMonitor;
 
 public class ButtonPanel extends JPanel {
 	private JButton idle, movie, close, connect, sync, async;
 	private ButtonHandler buttonHandler;
-	public ButtonPanel() {
+	private InfoPanel infoPanel;
+	
+	public ButtonPanel(ClientMonitor mon, InfoPanel infoPanel) {
 		setLayout(new GridLayout(3, 2));
-		buttonHandler = new ButtonHandler();
+		buttonHandler = new ButtonHandler(mon,infoPanel);
 		idle = new JButton("IDLE");
 		idle.setActionCommand("IDLE");
 		idle.addActionListener(buttonHandler);

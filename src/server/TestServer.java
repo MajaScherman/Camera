@@ -9,9 +9,9 @@ import org.junit.Test;
 public class TestServer {
 	ServerMonitor mon;
 	@Before
-	public void setUp() throws Exception {
-		mon = new ServerMonitor(6876, 1);
-	}
+//	public void setUp() throws Exception {
+//		mon = new ServerMonitor(6876, 1);
+//	}
 
 	@After
 	public void tearDown() throws Exception {

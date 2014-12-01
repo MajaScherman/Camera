@@ -45,9 +45,9 @@ public class ServerMonitor {
 	public static int MESSAGE_SIZE = 4;
 
 
-	public ServerMonitor(int port, int cameraNbr) {
+	public ServerMonitor(int port, int cameraNbr,AxisM3006V camera ) {
 		this.cameraNbr = cameraNbr;
-		camera = new AxisM3006V();
+		this.camera = camera;
 		camera.init();
 		camera.setProxy("argus-1.student.lth.se", port);
 
@@ -57,6 +57,10 @@ public class ServerMonitor {
 			System.out.println("ServerSocket could not be created in ServerMonitor constructor");
 			e.printStackTrace();
 		}
+	}
+	
+	public ServerSocket getServerSocket(){
+		return serverSocket;
 	}
 
 	public synchronized void establishConnection() {

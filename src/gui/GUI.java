@@ -8,6 +8,8 @@ import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.border.Border;
 
+import client.ButtonHandler;
+import client.ClientMonitor;
 import se.lth.cs.eda040.fakecamera.AxisM3006V;
 
 public class GUI extends JFrame {
@@ -15,15 +17,14 @@ public class GUI extends JFrame {
 	private JFrame frame;
 	private InfoPanel infoPanel;
 	private ButtonPanel buttonPanel;
+	private ButtonHandler buttonHandler;
+	
 
 	private byte[] jpeg = new byte[AxisM3006V.IMAGE_BUFFER_SIZE];
 	public static final int MAXIMUM_NUMBER_OF_CAMERAS = 2;
 
-	public static void main(String[] args) {
-		GUI gui = new GUI();
-	}
 
-	public GUI() {
+	public GUI(ClientMonitor mon) {
 		super();
 		frame = new JFrame();
 		frame.setSize(1000, 600);
@@ -45,9 +46,9 @@ public class GUI extends JFrame {
 		// The panel containing information about states
 		infoPanel = new InfoPanel();
 		frame.getContentPane().add(infoPanel);
-
-		// Panel containing the buttons
-		buttonPanel = new ButtonPanel();
+		buttonHandler = new ButtonHandler(mon,infoPanel);
+		//Panel containing the buttons
+		buttonPanel = new ButtonPanel(mon, infoPanel);
 		frame.getContentPane().add(buttonPanel);
 		frame.setVisible(true);
 	}
@@ -65,6 +66,7 @@ public class GUI extends JFrame {
 			imageViewer1.refresh(image);
 			break;
 		}
+
 
 	}
 

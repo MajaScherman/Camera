@@ -113,6 +113,14 @@ public class ClientMonitor {
 		}
 		notifyAll();
 	}
+	
+	/**
+	 * used to  allow the buttonHandler to set the command depending on which button is pressed.
+	 * @param command
+	 */
+	public synchronized void setCommand(int command){
+		this.command = command;
+	}
 
 	public synchronized int getNbrOfSockets() {
 		return nbrOfSockets;
