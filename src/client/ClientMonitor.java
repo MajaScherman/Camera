@@ -105,7 +105,7 @@ public class ClientMonitor {
 	 * @throws IOException
 	 * 
 	 */
-	public void sendMessageToServer(int serverIndex, int command)
+	public synchronized void sendMessageToServer(int serverIndex, int command)
 			throws IOException {
 		System.out.println("command: " + command + " serverIndex :"
 				+ serverIndex);
