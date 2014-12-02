@@ -193,7 +193,7 @@ public class ClientMonitor {
 	 *            index 0 and goes up to socketArray.length)
 	 */
 	public synchronized void connectToServer(int serverIndex) {
-		if (!(serverIndex > 0 && serverIndex < socket.length)) {
+		if (!(serverIndex >= 0 && serverIndex < socket.length)) {
 			// TODO Throw exception
 			System.out.println("The server index is out of range, "
 					+ "please give a value between 0 and " + socket.length);
