@@ -11,8 +11,7 @@ public class ClientWriter extends Thread {
 	}
 
 	public void run() {
-		while (true) {
-
+		while (!isInterrupted()) {
 			try {
 				mon.sendMessageToServer();
 			} catch (IOException e) {

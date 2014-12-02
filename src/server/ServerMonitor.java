@@ -67,13 +67,13 @@ public class ServerMonitor {
 		} else {
 			try {
 				clientSocket = serverSocket.accept();// blocking until
-														// connection available
+								// connection available
 				is = clientSocket.getInputStream();
 				os = clientSocket.getOutputStream();
 				isConnected = true;
 				notifyAll();
 			} catch (Exception e) {
-				System.out.println("Could not establish connection");
+				System.out.println("Could not establish connection"+e);
 			}
 		}
 	}

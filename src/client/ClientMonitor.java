@@ -129,10 +129,8 @@ public class ClientMonitor {
 		}
 		int serverIndex;
 		if(newCommand[0]){
-			//gör något med index serverindex 0
 			serverIndex = 0;
 		}else{
-			//gör något med severindex 1
 			serverIndex = 1;
 		}
 		newCommand[serverIndex] = false;
@@ -140,27 +138,15 @@ public class ClientMonitor {
 		switch (writerCommand[serverIndex]) {
 		case CLOSE_CONNECTION: // Closes connection with first server. This
 								// server has serverindex 0!!!!!
-			while (!isConnected[serverIndex]) {
-				try {
-					wait();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+			if(isConnected[serverIndex]) {
+				outputStream[serverIndex].write(writerCommand[serverIndex]);				
+				disconnectToServer(serverIndex);
 			}
-			outputStream[serverIndex].write(writerCommand[serverIndex]);
-			disconnectToServer(serverIndex);
 			break;
 		case OPEN_CONNECTION:
-			while (isConnected[serverIndex]) {
-				try {
-					wait();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+			if(!isConnected[serverIndex]) {				
+				connectToServer(serverIndex);
 			}
-			connectToServer(serverIndex);
 			break;
 		case MOVIE_MODE:
 			for (int i = 0; i < nbrOfSockets; i++) {

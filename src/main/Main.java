@@ -14,12 +14,31 @@ import client.SocketAddress;
 
 public class Main {
 	public static void main(String[] args) {
+		/**
+		 * Start up two servers
+		 */
+		
+		AxisM3006V camera1 = new AxisM3006V();
+		ServerMonitor serverMon1 = new ServerMonitor(7897,
+				"localhost", 0, camera1);
+		ServerReader serverReader1 = new ServerReader(serverMon1);
+		ServerWriter serverWriter1 = new ServerWriter(serverMon1);
+		serverReader1.start();
+		serverWriter1.start();
+		
+		AxisM3006V camera2 = new AxisM3006V();
+		ServerMonitor serverMon2 = new ServerMonitor(7898,
+				"localhost", 1, camera2);
+		ServerReader serverReader2 = new ServerReader(serverMon2);
+		ServerWriter serverWriter2 = new ServerWriter(serverMon2);
+		serverReader2.start();
+		serverWriter2.start();
 
 		/**
 		 * Start up the client
 		 */
-		SocketAddress adr1 = new SocketAddress("argus-1.student.lth.se", 7897);
-		SocketAddress adr2 = new SocketAddress("argus-2.student.lth.se", 7898);
+		SocketAddress adr1 = new SocketAddress("localhost", 7897);
+		SocketAddress adr2 = new SocketAddress("localhost", 7898);
 		SocketAddress[] addresses = new SocketAddress[2];
 		addresses[0] = adr1;
 		addresses[1] = adr2;
@@ -38,25 +57,6 @@ public class Main {
 
 		GUI gui = new GUI(clientMon);
 
-		/**
-		 * Start up one server
-		 */
-
-		AxisM3006V camera1 = new AxisM3006V();
-		ServerMonitor serverMon1 = new ServerMonitor(7897,
-				"argus-1.student.lth.se", 0, camera1);
-		ServerReader serverReader1 = new ServerReader(serverMon1);
-		ServerWriter serverWriter1 = new ServerWriter(serverMon1);
-		serverReader1.start();
-		serverWriter1.start();
-
-		AxisM3006V camera2 = new AxisM3006V();
-		ServerMonitor serverMon2 = new ServerMonitor(7898,
-				"argus-2.student.lth.se", 1, camera2);
-		ServerReader serverReader2 = new ServerReader(serverMon2);
-		ServerWriter serverWriter2 = new ServerWriter(serverMon2);
-		serverReader2.start();
-		serverWriter2.start();
 
 	}
 
