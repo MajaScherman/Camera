@@ -23,7 +23,7 @@ public class Main {
 		SocketAddress[] addresses = new SocketAddress[2];
 		addresses[0] = adr1;
 		addresses[1] = adr2;
-		ClientMonitor clientMon = new ClientMonitor(1, addresses);
+		ClientMonitor clientMon = new ClientMonitor(2, addresses);
 		ClientReader cReader0 = new ClientReader(clientMon, 0);
 		ClientReader cReader1 = new ClientReader(clientMon, 1);
 		ClientWriter cWriter = new ClientWriter(clientMon, null);

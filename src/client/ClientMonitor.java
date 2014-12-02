@@ -94,23 +94,32 @@ public class ClientMonitor {
 	 * 
 	 */
 	public void sendMessageToServer(int serverIndex ,int command) throws IOException {
-		while(!newMode){
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
+		System.out.println("command: " + command + " serverIndex :" + serverIndex);
 		this.command = command;
 		switch (command) {
 		case CLOSE_CONNECTION: //Closes connection with first server. This server has serverindex 0!!!!!
+			while(!isConnected[serverIndex]){
+				try {
+					wait();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 			outputStream[serverIndex].write(command);
-			disconnectToServer(0);
+			disconnectToServer(serverIndex);
 			break;
 		case OPEN_CONNECTION:
+			while(isConnected[serverIndex]){
+				try {
+					wait();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 			outputStream[serverIndex].write(command);
-			connectToServer(0);
+			connectToServer(serverIndex);
 			break;
 		case MOVIE_MODE:
 			for(int i = 0 ; i < nbrOfSockets; i++){

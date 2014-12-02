@@ -18,9 +18,9 @@ public class ButtonHandler implements ActionListener {
 	}
 
 	public void actionPerformed(ActionEvent evt) {
-		String command = ((JButton) evt.getSource()).getActionCommand();
+		String actionCommand = ((JButton) evt.getSource()).getActionCommand();
 		try {
-			switch (command) {
+			switch (actionCommand) {
 			case "IDLE":
 				mon.sendMessageToServer(0, ClientMonitor.IDLE); // Notice that
 																// we send in a
@@ -41,21 +41,25 @@ public class ButtonHandler implements ActionListener {
 			case "CLOSE CONNECTION 1":
 				JButton temp1 = (JButton) evt.getSource();
 				temp1.setText("OPEN CONNECTION 1");
+				temp1.setActionCommand("OPEN CONNECTION 1");
 				mon.sendMessageToServer(0, ClientMonitor.CLOSE_CONNECTION);
 				break;
 			case "CLOSE CONNECTION 2":
 				JButton temp2 = (JButton) evt.getSource();
 				temp2.setText("OPEN CONNECTION 2");
+				temp2.setActionCommand("OPEN CONNECTION 2");
 				mon.sendMessageToServer(1, ClientMonitor.CLOSE_CONNECTION);
 				break;
 			case "OPEN CONNECTION 1":
 				JButton temp3 = (JButton) evt.getSource();
 				temp3.setText("CLOSE CONNECTION 1");
+				temp3.setActionCommand("CLOSE CONNECTION 1");
 				mon.sendMessageToServer(0, ClientMonitor.OPEN_CONNECTION);
 				break;
 			case "OPEN CONNECTION 2":
 				JButton temp4 = (JButton) evt.getSource();
 				temp4.setText("CLOSE CONNECTION 2");
+				temp4.setActionCommand("CLOSE CONNECTION 2");
 				mon.sendMessageToServer(1, ClientMonitor.OPEN_CONNECTION);
 				break;
 			case "SYNCHRONIZED":

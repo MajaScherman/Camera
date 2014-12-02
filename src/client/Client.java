@@ -11,7 +11,7 @@ public class Client {
 		SocketAddress[] addresses = new SocketAddress[2];
 		addresses[0] = adr1;
 		addresses[1] = adr2;
-		ClientMonitor mon = new ClientMonitor(1, addresses);
+		ClientMonitor mon = new ClientMonitor(2, addresses);
 		ClientReader cReader0 = new ClientReader(mon, 0);
 		ClientReader cReader1 = new ClientReader(mon, 1);
 		ClientWriter cWriter = new ClientWriter(mon, null);
