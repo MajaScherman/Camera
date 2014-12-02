@@ -30,7 +30,6 @@ public class ServerMonitor {
 	 * Attributes for commands
 	 */
 	private boolean movieMode;
-	private int command;
 	private long lastTimeSentImg;
 
 	// Hopefully its ok to add 3*4 for the type, cameraNbr, and size.
@@ -67,7 +66,8 @@ public class ServerMonitor {
 			System.out.println("Server connection is already established");
 		} else {
 			try {
-				clientSocket = serverSocket.accept();//wait
+				clientSocket = serverSocket.accept();// blocking until
+														// connection available
 				is = clientSocket.getInputStream();
 				os = clientSocket.getOutputStream();
 				isConnected = true;
@@ -109,15 +109,15 @@ public class ServerMonitor {
 
 		}
 		ByteBuffer bb = ByteBuffer.wrap(message);
-		command = bb.getInt();
-		runCommand();
+		int command = bb.getInt();
+		runCommand(command);
 		notifyAll();
 	}
 
 	/**
 	 * Interprets the command and performs the correct actions.
 	 */
-	private synchronized void runCommand() {
+	private synchronized void runCommand(int command) {
 		switch (command) {
 		case ClientMonitor.CLOSE_CONNECTION:
 			closeConnection();
@@ -146,14 +146,19 @@ public class ServerMonitor {
 			while (!isConnected) {
 				wait();
 			}
-			byte[] message = getImage();
+
+			byte[] message;
 			if (movieMode) {
+				message = getImage();
 				if (message != null) {
 					os.write(message);
 					lastTimeSentImg = System.currentTimeMillis();
+				} else {
+					System.out.println("could not fetch an image");
 				}
 			} else {
 				if (System.currentTimeMillis() - lastTimeSentImg >= 5000) {
+					message = getImage();
 					os.write(message);
 					lastTimeSentImg = System.currentTimeMillis();
 				} else {
@@ -161,6 +166,7 @@ public class ServerMonitor {
 					long diff = t - System.currentTimeMillis();
 					if (diff > 0) {
 						Thread.sleep(diff);
+						message = getImage();
 						os.write(message);
 					}
 				}
@@ -219,8 +225,7 @@ public class ServerMonitor {
 		bb.putInt(cameraNbr);// 4 bytes for every int
 		bb.put(time);
 		bb.put(data);// image or command
-		byte[] message = new byte[bb.capacity()];
-		bb.get(message, 0, message.length);
+		byte[] message = bb.array();
 		return message;
 
 	}
@@ -236,13 +241,11 @@ public class ServerMonitor {
 	private synchronized void motionDetection() throws IOException {
 		if (camera.motionDetected()) {
 			movieMode = true;
-			byte[] latestImgTime = new byte[AxisM3006V.TIME_ARRAY_SIZE];
-			ByteBuffer bb = ByteBuffer.allocate(4);
-
-			camera.getTime(latestImgTime, 0);
-
-			os.write(packageData(ClientMonitor.COMMAND, 4, cameraNbr,
-					latestImgTime, bb.putInt(1).array()));
+			ByteBuffer bb = ByteBuffer.allocate(8);
+			bb.putInt(ClientMonitor.COMMAND);
+			bb.putInt(ClientMonitor.MOVIE_MODE);
+			os.write(bb.array());
+			notifyAll();
 		}
 
 	}

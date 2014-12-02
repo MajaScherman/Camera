@@ -55,7 +55,6 @@ public class ClientMonitor {
 	public static final int ASYNCHRONIZED = 4;
 	public static final int SYNCHRONIZED = 5;
 
-
 	/**
 	 * Attributes for handling images
 	 */
@@ -66,7 +65,7 @@ public class ClientMonitor {
 	private int nbrOfImgsInBuffer;
 	private Image[][] cameraImages; // Contains one image buffer for each
 									// camera
-	
+
 	/**
 	 * Attributes for handling commands
 	 */
@@ -75,7 +74,7 @@ public class ClientMonitor {
 	private int getAtC;
 	private int[][] cameraCommands;
 	private int nbrOfCommandsInBuffer;
-	
+
 	public static final int IMAGE_SIZE = 640 * 480 * 3; // REQ 7
 	public static final int IMAGE_BUFFER_SIZE = 125; // Supports 125 images,
 														// which is 5 seconds of
@@ -106,12 +105,15 @@ public class ClientMonitor {
 	 * @throws IOException
 	 * 
 	 */
-	public void sendMessageToServer(int serverIndex ,int command) throws IOException {
-		System.out.println("command: " + command + " serverIndex :" + serverIndex);
+	public void sendMessageToServer(int serverIndex, int command)
+			throws IOException {
+		System.out.println("command: " + command + " serverIndex :"
+				+ serverIndex);
 		this.command = command;
 		switch (command) {
-		case CLOSE_CONNECTION: //Closes connection with first server. This server has serverindex 0!!!!!
-			while(!isConnected[serverIndex]){
+		case CLOSE_CONNECTION: // Closes connection with first server. This
+								// server has serverindex 0!!!!!
+			while (!isConnected[serverIndex]) {
 				try {
 					wait();
 				} catch (InterruptedException e) {
@@ -123,7 +125,7 @@ public class ClientMonitor {
 			disconnectToServer(serverIndex);
 			break;
 		case OPEN_CONNECTION:
-			while(isConnected[serverIndex]){
+			while (isConnected[serverIndex]) {
 				try {
 					wait();
 				} catch (InterruptedException e) {
@@ -134,15 +136,19 @@ public class ClientMonitor {
 			connectToServer(serverIndex);
 			break;
 		case MOVIE_MODE:
-			for(int i = 0 ; i < nbrOfSockets; i++){
-			outputStream[i].write(command);
+			for (int i = 0; i < nbrOfSockets; i++) {
+				if (isConnected[i]) {
+					outputStream[i].write(command);
+				}
 			}
 			movieMode = true;
 			break;
+
 		case IDLE_MODE:
 			for(int i = 0 ; i < nbrOfSockets; i++){
 				outputStream[i].write(command);
 				}
+			
 			movieMode = false;
 			break;
 		}
@@ -182,7 +188,7 @@ public class ClientMonitor {
 			newMode = false;
 			notifyAll();
 			return COMMAND;
-		}else{
+		} else {
 			notifyAll();
 			throw new Exception("Check update method is wrong");
 		}
@@ -273,15 +279,15 @@ public class ClientMonitor {
 				wait();
 			}
 			// Read header - read is blocking
-			type = readHeaderInt(serverIndex);
+			type = readInt(serverIndex);
 			System.out.println("Type is " + type);
-			size = readHeaderInt(serverIndex);
-			System.out.println("Package size " + size);
-			cameraNumber = readHeaderInt(serverIndex);
-			System.out.println("Camera number is " + cameraNumber);
-			inputStream[serverIndex].read(timeStamp);
-			System.out.println("Timestamp is " + timeStamp);
 			if (type == IMAGE) {
+				size = readInt(serverIndex);
+				System.out.println("Package size " + size);
+				cameraNumber = readInt(serverIndex);
+				System.out.println("Camera number is " + cameraNumber);
+				inputStream[serverIndex].read(timeStamp);
+				System.out.println("Timestamp is " + timeStamp);
 
 				Image image = new Image(cameraNumber, timeStamp,
 						readPackage(serverIndex));
@@ -290,15 +296,13 @@ public class ClientMonitor {
 				putImageToBuffer(image);// data contains the image
 				notifyAll();
 			} else if (type == COMMAND) {
-				byte[] commandData = readPackage(serverIndex);
-				ByteBuffer bb = ByteBuffer.wrap(commandData);
-				int temp = bb.getInt();
-				if (temp <= 0 || temp > 6) {
+				int commandData = readInt(serverIndex);
+				if (commandData != MOVIE_MODE) {
 					throw new Exception(
-							"You have recieved a command which is not between 0-5");
+							"Client have recieved an invalid command");
 
 				}
-				command = temp;//TODO PUT COMMAND TO BUFFER BLURP
+				command = commandData;// TODO PUT COMMAND TO BUFFER BLURP
 				newMode = true;
 				updateGUI = true;
 				putCommandToBuffer(command);
@@ -341,7 +345,8 @@ public class ClientMonitor {
 		}
 		return data;
 	}
-	private synchronized void putCommandToBuffer(int com){
+
+	private synchronized void putCommandToBuffer(int com) {
 		commandBuffer[putAtC] = com;
 		putAtC++;
 		nbrOfCommandsInBuffer++;
@@ -350,9 +355,9 @@ public class ClientMonitor {
 		}
 		notifyAll();
 	}
-	
-	public synchronized  int getCommandFromBuffer(){
-		while(nbrOfCommandsInBuffer < 0){
+
+	public synchronized int getCommandFromBuffer() {
+		while (nbrOfCommandsInBuffer < 0) {
 			try {
 				wait();
 			} catch (InterruptedException e) {
@@ -399,7 +404,7 @@ public class ClientMonitor {
 		return image;
 	}
 
-	private synchronized int readHeaderInt(int serverIndex) {
+	private synchronized int readInt(int serverIndex) {
 
 		// Hämta fyra bytes
 		try {
