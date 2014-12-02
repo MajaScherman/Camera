@@ -7,6 +7,8 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
+import se.lth.cs.eda040.fakecamera.AxisM3006V;
+
 public class ClientMonitor {
 
 	/**
@@ -35,12 +37,9 @@ public class ClientMonitor {
 	 * Header attributes
 	 */
 
-	private int type;
 	public static final int IMAGE = 0;
 	public static final int COMMAND = 1;
-	private int size;
-	private int cameraNumber;
-	private byte[] timeStamp;
+	
 
 	/**
 	 * Data in packets
@@ -96,7 +95,6 @@ public class ClientMonitor {
 		isConnected = new boolean[nbrOfSockets];
 		inputStream = new InputStream[nbrOfSockets];
 		outputStream = new OutputStream[nbrOfSockets];
-		timeStamp = new byte[8];
 		this.nbrOfSockets = nbrOfSockets;
 		imageBuffer = new Image[IMAGE_BUFFER_SIZE];
 		getAt = putAt = nbrOfImgsInBuffer = 0;
@@ -133,8 +131,7 @@ public class ClientMonitor {
 		newCommand[serverIndex] = false;
 		notifyAll();
 		switch (writerCommand[serverIndex]) {
-		case CLOSE_CONNECTION: // Closes connection with first server. This
-								// server has serverindex 0!!!!!
+		case CLOSE_CONNECTION: 
 			if (isConnected[serverIndex]) {
 				outputStream[serverIndex].write(writerCommand[serverIndex]);
 				disconnectToServer(serverIndex);
@@ -271,25 +268,42 @@ public class ClientMonitor {
 	 * @throws Exception
 	 */
 	public synchronized void listenToServer(int serverIndex) throws Exception {
-		System.out.println("ger maja en ack ");
 		if (serverIndex >= 0 && serverIndex < nbrOfSockets) {
 			try {
 				while (!isConnected[serverIndex]) {
 					wait();
 				}
+				System.out.println("read header client side");
 				// Read header - read is blocking
-				type = readInt(serverIndex);
+				int type = readInt(serverIndex);
 				System.out.println("Type is " + type);
 				if (type == IMAGE) {
-					size = readInt(serverIndex);
-					System.out.println("Package size " + size);
-					cameraNumber = readInt(serverIndex);
+					int size = readInt(serverIndex);
+					System.out.println("Package size JPEG" + size);
+					int cameraNumber = readInt(serverIndex);
 					System.out.println("Camera number is " + cameraNumber);
-					inputStream[serverIndex].read(timeStamp);
+					byte[] timeStamp = new byte[8];
+					int bytesRead  = 0;
+					int bytesLeft  = timeStamp.length;
+					int status;
+
+					// We have to keep reading until -1 (meaning "end of file") is
+					// returned. The socket (which the stream is connected to)
+					// does not wait until all data is available; instead it
+					// returns if nothing arrived for some (short) time.
+					do {
+						status = inputStream[serverIndex].read(timeStamp, bytesRead, bytesLeft);
+						// The 'status' variable now holds the no. of bytes read,
+						// or -1 if no more data is available
+						if (status > 0) {
+							bytesRead += status;
+							bytesLeft -= status;
+						}
+					} while (bytesRead >= 0);
 					System.out.println("Timestamp is " + timeStamp);
 
 					Image image = new Image(cameraNumber, timeStamp,
-							readPackage(serverIndex));
+							readPackage(serverIndex, size));
 					newImage = true;
 					updateGUI = true;
 					putImageToBuffer(image);// data contains the image
@@ -322,28 +336,26 @@ public class ClientMonitor {
 		}
 	}
 
-	private synchronized byte[] readPackage(int serverIndex) throws IOException {
+	private synchronized byte[] readPackage(int serverIndex, int size) throws IOException {
+		// Now load the JPEG image.
 		data = new byte[size];
+		int bytesRead = 0;
+		int bytesLeft = size;
+		int status;
 
-		// Read package
-		int read = 0; // Number of read bytes so far
-		while (read != size) {
-			// Read bytes and put in data array until size bytes are
-			// read
-			// Read returns number of bytes read <= size-read
-			int n;
-			try {
-				n = inputStream[serverIndex].read(data, read, size - read);
-				if (n == -1) {
-					throw new IOException("End of stream");
-				}
-				read += n;
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				throw new IOException(e);
+		// We have to keep reading until -1 (meaning "end of file") is
+		// returned. The socket (which the stream is connected to)
+		// does not wait until all data is available; instead it
+		// returns if nothing arrived for some (short) time.
+		do {
+			status = inputStream[serverIndex].read(data, bytesRead, bytesLeft);
+			// The 'status' variable now holds the no. of bytes read,
+			// or -1 if no more data is available
+			if (status > 0) {
+				bytesRead += status;
+				bytesLeft -= status;
 			}
-
-		}
+		} while (bytesRead >= 0);
 		return data;
 	}
 
@@ -404,16 +416,30 @@ public class ClientMonitor {
 		notifyAll();
 		return image;
 	}
-
+	
 	private synchronized int readInt(int serverIndex) {
-		System.out.println("readar ints");
 		byte[] byteToInt = new byte[4];
-
+		int bytesRead = 0;
+		int bytesLeft = 4;
+		int status;
+		// We have to keep reading until -1 (meaning "end of file") is
+		// returned. The socket (which the stream is connected to)
+		// does not wait until all data is available; instead it
+		// returns if nothing arrived for some (short) time.
 		try {
-			inputStream[serverIndex].read(byteToInt);
-			System.out.println(byteToInt);
+			do {
+
+				status = inputStream[serverIndex].read(byteToInt, bytesRead,
+						bytesLeft);
+
+				// The 'status' variable now holds the no. of bytes read,
+				// or -1 if no more data is available
+				if (status > 0) {
+					bytesRead += status;
+					bytesLeft -= status;
+				}
+			} while (bytesRead >= 0);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			System.out.println(e);
 			e.printStackTrace();
 		}

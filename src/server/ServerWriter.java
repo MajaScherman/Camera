@@ -9,7 +9,6 @@ public class ServerWriter extends Thread {
 	}
 
 	public void run() {
-		System.out.println("ServerWriter started");
 		while (!isInterrupted()) {
 			mon.write();
 		}

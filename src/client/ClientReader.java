@@ -15,14 +15,11 @@ public class ClientReader extends Thread {
 	public ClientReader(ClientMonitor m, int serverNbr) {
 		monitor = m;
 		serverIndex = serverNbr;
-		System.out.println("Client readers constructor method is running lol");
 	}
 
 	public void run() {
-		System.out.println("Client readers run method is running lol");
 		while (!isInterrupted()) {
 			try {
-				System.out.println("precis här faktiskt");
 				monitor.listenToServer(serverIndex);
 			} catch (Exception e) {
 				System.out.println("Listentoserver in monitor is mean :(" + e);

@@ -43,7 +43,7 @@ public class ServerMonitor {
 		this.camera = camera;
 		camera.init();
 		camera.setProxy(hostAddress, port);
-
+		lastTimeSentImg = System.currentTimeMillis();
 		try {
 			serverSocket = new ServerSocket(port);
 		} catch (IOException e) {
@@ -102,8 +102,19 @@ public class ServerMonitor {
 
 	public synchronized void readAndRunCommand() {
 		byte[] message = new byte[MESSAGE_SIZE];
-		try {
-			is.read(message);
+		try {//Read the request
+			int bytesRead = 0;
+			int bytesLeft = MESSAGE_SIZE;
+			int status;
+			do {
+				status = is.read(message, bytesRead, bytesLeft);
+				// The 'status' variable now holds the no. of bytes read,
+				// or -1 if no more data is available
+				if (status > 0) {
+					bytesRead += status;
+					bytesLeft -= status;
+				}
+			} while (bytesRead >= 0);
 		} catch (IOException e) {
 			e.printStackTrace();
 
@@ -151,10 +162,9 @@ public class ServerMonitor {
 			if (movieMode) {
 				message = getImage();
 				if (message != null) {
-					System.out.println("message is an image and not null");
-
+					System.out.println("message is an image and not null in movie mode");
 					os.write(message, 0, BUFFER_LENGTH);
-					System.out.println("printed image to output stream...");
+					System.out.println("printed image to output stream in movie mode");
 					lastTimeSentImg = System.currentTimeMillis();
 				} else {
 					System.out.println("could not fetch an image");
@@ -205,13 +215,13 @@ public class ServerMonitor {
 	 *         was available then null is returned.
 	 */
 	private synchronized byte[] getImage() {
-		System.out.println("inside getImage doin mah thing");
 		byte[] image = new byte[AxisM3006V.IMAGE_BUFFER_SIZE];
 		byte[] imageTime = new byte[AxisM3006V.TIME_ARRAY_SIZE];
 		int length = camera.getJPEG(image, 0);
-		System.out.println(length+"längden på JPEG");
+		System.out.println("Längden på JPEG serversida: " + length);
 		if (length != 0) {
 			camera.getTime(imageTime, 0); // second param is offset
+			System.out.println("Cameratid serversida: " + imageTime);
 			byte[] message = packageData(ClientMonitor.IMAGE, length,
 					cameraNbr, imageTime, image);
 			return message;
@@ -238,7 +248,7 @@ public class ServerMonitor {
 	 */
 	private synchronized byte[] packageData(int type, int size, int cameraNbr,
 			byte[] time, byte[] data) {
-		System.out.println("vi packeterar datan här");
+		System.out.println("vi packeterar datan här serversida");
 		ByteBuffer bb = ByteBuffer.allocate(BUFFER_LENGTH);
 		bb.putInt(type);
 		bb.putInt(size);
