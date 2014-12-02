@@ -6,6 +6,7 @@ import java.net.ServerSocket;
 import java.net.Socket; 
 import java.nio.ByteBuffer;
 
+import client.ClientMonitor;
 import se.lth.cs.eda040.fakecamera.AxisM3006V; // Provides AxisM3006V
 
 public class ServerMonitor {
@@ -30,14 +31,6 @@ public class ServerMonitor {
 	private boolean movieMode;
 	private int command;
 	private long lastTimeSentImg;
-	
-	public static final int CLOSE_CONNECTION = 0;
-	public static final int MOVIE_MODE = 1;
-	public static final int IDLE = 2;
-	public static final int START_CONNECTION = 3;
-	
-	public static final int IMAGE = 0;
-	public static final int COMMAND = 1;
 
 	// Hopefully its ok to add 3*4 for the type, cameraNbr, and size.
 	public static int BUFFER_LENGTH = AxisM3006V.IMAGE_BUFFER_SIZE
@@ -121,14 +114,20 @@ public class ServerMonitor {
 	 */
 	public synchronized void runCommand() {
 		switch (command) {
-		case CLOSE_CONNECTION:
-			isConnected = false;
+		case ClientMonitor.CLOSE_CONNECTION:
+			closeConnection();
 			break;
-		case MOVIE_MODE:
+		case ClientMonitor.MOVIE_MODE:
 			movieMode = true;
 			break;
-		case IDLE:
+		case ClientMonitor.IDLE:
 			movieMode = false;
+			break;
+		case ClientMonitor.START_CONNECTION:
+			establishConnection();
+			break;
+		default:
+			System.out.println("Invalid command sent to server from client");
 			break;
 		}
 		notifyAll();
@@ -178,7 +177,7 @@ public class ServerMonitor {
 		int length = camera.getJPEG(image, 0);
 		if (length != 0) {
 			camera.getTime(imageTime, 0);
-			byte[] message = packageData(IMAGE, length, cameraNbr, imageTime,
+			byte[] message = packageData(ClientMonitor.IMAGE, length, cameraNbr, imageTime,
 					image);
 			return message;
 		}
@@ -228,7 +227,7 @@ public class ServerMonitor {
 
 			camera.getTime(latestImgTime, 0);
 
-			os.write(packageData(COMMAND, 4, cameraNbr, latestImgTime, bb.putInt(1)
+			os.write(packageData(ClientMonitor.COMMAND, 4, cameraNbr, latestImgTime, bb.putInt(1)
 					.array()));
 		} 
 
