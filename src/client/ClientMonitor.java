@@ -64,6 +64,16 @@ public class ClientMonitor {
 	private int nbrOfImgsInBuffer;
 	private Image[][] cameraImages; // Contains one image buffer for each
 									// camera
+	
+	/**
+	 * Attributes for handling commands
+	 */
+	private int[] commandBuffer;
+	private int putAtC;
+	private int getAtC;
+	private int[][] cameraCommands;
+	private int nbrOfCommandsInBuffer;
+	
 	public static final int IMAGE_SIZE = 640 * 480 * 3; // REQ 7
 	public static final int IMAGE_BUFFER_SIZE = 125; // Supports 125 images,
 														// which is 5 seconds of
@@ -84,6 +94,7 @@ public class ClientMonitor {
 		this.nbrOfSockets = nbrOfSockets;
 		imageBuffer = new Image[IMAGE_BUFFER_SIZE];
 		getAt = putAt = nbrOfImgsInBuffer = 0;
+		getAtC = putAtC = nbrOfCommandsInBuffer = 0;
 	}
 
 	/**
@@ -118,7 +129,6 @@ public class ClientMonitor {
 					e.printStackTrace();
 				}
 			}
-			outputStream[serverIndex].write(command);
 			connectToServer(serverIndex);
 			break;
 		case MOVIE_MODE:
@@ -286,9 +296,10 @@ public class ClientMonitor {
 							"You have recieved a command which is not between 0-3");
 
 				}
-				command = temp;
+				command = temp;//TODO PUT COMMAND TO BUFFER BLURP
 				newMode = true;
 				updateGUI = true;
+				putCommandToBuffer(command);
 				// om det finns en begäran på ett movie mode i paketet måste
 				// command sätts till MOVIEMODE
 				notifyAll();
@@ -327,6 +338,34 @@ public class ClientMonitor {
 
 		}
 		return data;
+	}
+	private synchronized void putCommandToBuffer(int com){
+		commandBuffer[putAtC] = com;
+		putAtC++;
+		nbrOfCommandsInBuffer++;
+		if (putAtC > 125) {
+			putAtC = 0;
+		}
+		notifyAll();
+	}
+	
+	public synchronized  int getCommandFromBuffer(){
+		while(nbrOfCommandsInBuffer < 0){
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		int com = commandBuffer[getAtC];
+		getAtC++;
+		nbrOfCommandsInBuffer--;
+		if (getAtC > 125) {
+			getAtC = 0;
+		}
+		notifyAll();
+		return com;
 	}
 
 	private synchronized void putImageToBuffer(Image image) {

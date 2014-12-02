@@ -24,7 +24,8 @@ public class Updater extends Thread {
 				Image image = mon.getImageFromBuffer();
 				gui.setImage(image);
 			} else if (type == ClientMonitor.COMMAND) {
-				// TODO update modes an stuff
+				int command = mon.getCommandFromBuffer();
+				//TODO gui.setCommand(command);
 			}
 		}
 	}
