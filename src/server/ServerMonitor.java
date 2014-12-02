@@ -141,71 +141,58 @@ public class ServerMonitor {
 	 * was detected in the latest image, if so then MovieMode is activated and
 	 * the client is informed.
 	 */
-	public void write() {
-		if (!isConnected) {
-			establishConnection();
-		}
-
-		byte[] message;
-		if (movieMode) {
-			message = getImage();
-			if (message != null) {
-				System.out.println("message is an image and not null");
-				try {
-					os.write(message);
-				} catch (IOException e) {
-					System.out.println("Message could not be sent, check servermonitor.write()");
-					e.printStackTrace();
-				}
-				lastTimeSentImg = System.currentTimeMillis();
-			} else {
-				System.out.println("could not fetch an image");
+	public synchronized void write() {
+		try {
+			while (!isConnected) {
+				wait();
 			}
-		} else {
 
-			if (System.currentTimeMillis() - lastTimeSentImg >= 5000) {
-
+			byte[] message;
+			if (movieMode) {
 				message = getImage();
 				if (message != null) {
-					try {
-						os.write(message);
-					} catch (IOException e) {
-						System.out.println("Message could not be sent2");
+					System.out.println("message is an image and not null");
 
-						e.printStackTrace();
-					}
+					os.write(message);
+
 					lastTimeSentImg = System.currentTimeMillis();
+				} else {
+					System.out.println("could not fetch an image");
 				}
 			} else {
-				long t = lastTimeSentImg + 5000;
-				long diff = t - System.currentTimeMillis();
-				if (diff > 0) {
-					try {
-						Thread.sleep(diff);
-					} catch (InterruptedException e) {
-						System.out.println("sleep failed");
-						e.printStackTrace();
-					}
+
+				if (System.currentTimeMillis() - lastTimeSentImg >= 5000) {
+
 					message = getImage();
 					if (message != null) {
-						try {
-							os.write(message);
-						} catch (IOException e) {
-							System.out.println("Message could not be sent3");
-							e.printStackTrace();
-						}
+
+						os.write(message);
+
 						lastTimeSentImg = System.currentTimeMillis();
+					}
+				} else {
+					long t = lastTimeSentImg + 5000;
+					long diff = t - System.currentTimeMillis();
+					if (diff > 0) {
+
+						Thread.sleep(diff);
+
+						message = getImage();
+						if (message != null) {
+
+							os.write(message);
+
+							lastTimeSentImg = System.currentTimeMillis();
+						}
 					}
 				}
 			}
-			try {
-				motionDetection();
-			} catch (IOException e) {
-				System.out.println("Motiondetection failed");
-				e.printStackTrace();
-			}
-			notifyAll();
+			motionDetection();
+		} catch (Exception e) {
+			System.out.println("Write failed");
+			e.printStackTrace();
 		}
+		notifyAll();
 	}
 
 	/**
