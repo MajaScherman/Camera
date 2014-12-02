@@ -22,7 +22,7 @@ public class ButtonHandler implements ActionListener {
 		try {
 			switch (actionCommand) {
 			case "IDLE":
-				mon.sendMessageToServer(0, ClientMonitor.IDLE); // Notice that
+				mon.sendMessageToServer(0, ClientMonitor.IDLE_MODE); // Notice that
 																// we send in a
 																// serverIndex 0,
 																// but this is

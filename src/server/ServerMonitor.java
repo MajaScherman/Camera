@@ -125,7 +125,7 @@ public class ServerMonitor {
 		case ClientMonitor.MOVIE_MODE:
 			movieMode = true;
 			break;
-		case ClientMonitor.IDLE:
+		case ClientMonitor.IDLE_MODE:
 			movieMode = false;
 			break;
 		default:

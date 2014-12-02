@@ -51,7 +51,9 @@ public class ClientMonitor {
 	public static final int CLOSE_CONNECTION = 0;
 	public static final int OPEN_CONNECTION = 1;
 	public static final int MOVIE_MODE = 2;
-	public static final int IDLE = 3;
+	public static final int IDLE_MODE = 3;
+	public static final int ASYNCHRONIZED = 4;
+	public static final int SYNCHRONIZED = 5;
 
 
 	/**
@@ -137,7 +139,7 @@ public class ClientMonitor {
 			}
 			movieMode = true;
 			break;
-		case IDLE:
+		case IDLE_MODE:
 			for(int i = 0 ; i < nbrOfSockets; i++){
 				outputStream[i].write(command);
 				}
@@ -291,9 +293,9 @@ public class ClientMonitor {
 				byte[] commandData = readPackage(serverIndex);
 				ByteBuffer bb = ByteBuffer.wrap(commandData);
 				int temp = bb.getInt();
-				if (temp < 0 || temp > 3) {
+				if (temp <= 0 || temp > 6) {
 					throw new Exception(
-							"You have recieved a command which is not between 0-3");
+							"You have recieved a command which is not between 0-5");
 
 				}
 				command = temp;//TODO PUT COMMAND TO BUFFER BLURP

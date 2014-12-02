@@ -1,14 +1,17 @@
 package client;
 
 import gui.GUI;
+import gui.InfoPanel;
 
 public class Updater extends Thread {
 	private ClientMonitor mon;
 	private GUI gui;
+	private InfoPanel infoPanel;
 
-	public Updater(ClientMonitor mon, GUI gui) {
+	public Updater(ClientMonitor mon, GUI gui, InfoPanel infoPanel) {
 		this.mon = mon;
 		this.gui = gui;
+		this.infoPanel = infoPanel;
 	}
 
 	public void run() {
@@ -31,7 +34,20 @@ public class Updater extends Thread {
 				}
 			} else if (type == ClientMonitor.COMMAND) {
 				int command = mon.getCommandFromBuffer();
-				//TODO gui.setCommand(command);
+				switch (command) {
+				case ClientMonitor.MOVIE_MODE:
+					infoPanel.setLabelText(2, "Movie Mode");
+					break;
+				case ClientMonitor.ASYNCHRONIZED:
+					infoPanel.setLabelText(1, "Asynchronized Mode");
+					break;
+				case ClientMonitor.SYNCHRONIZED:
+					infoPanel.setLabelText(1, "Synchronized Mode");
+					break;
+				default:
+					break;
+				}
+
 			}
 		}
 	}
