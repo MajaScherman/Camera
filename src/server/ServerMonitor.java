@@ -1,9 +1,10 @@
 package server;
+
 import java.io.IOException;
-import java.io.InputStream; 
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
-import java.net.Socket; 
+import java.net.Socket;
 import java.nio.ByteBuffer;
 
 import client.ClientMonitor;
@@ -37,8 +38,8 @@ public class ServerMonitor {
 			+ AxisM3006V.TIME_ARRAY_SIZE + 4 * 3;
 	public static int MESSAGE_SIZE = 4;
 
-
-	public ServerMonitor(int port, String hostAddress, int cameraNbr,AxisM3006V camera ) {
+	public ServerMonitor(int port, String hostAddress, int cameraNbr,
+			AxisM3006V camera) {
 		this.cameraNbr = cameraNbr;
 		this.camera = camera;
 		camera.init();
@@ -47,12 +48,17 @@ public class ServerMonitor {
 		try {
 			serverSocket = new ServerSocket(port);
 		} catch (IOException e) {
-			System.out.println("ServerSocket could not be created in ServerMonitor constructor");
+			System.out
+					.println("ServerSocket could not be created in ServerMonitor constructor");
 			e.printStackTrace();
 		}
 	}
-	
-	public ServerSocket getServerSocket(){
+
+	public synchronized boolean isConnected() {
+		return isConnected;
+	}
+
+	public synchronized ServerSocket getServerSocket() {
 		return serverSocket;
 	}
 
@@ -61,7 +67,7 @@ public class ServerMonitor {
 			System.out.println("Server connection is already established");
 		} else {
 			try {
-				clientSocket = serverSocket.accept();
+				clientSocket = serverSocket.accept();//wait
 				is = clientSocket.getInputStream();
 				os = clientSocket.getOutputStream();
 				isConnected = true;
@@ -88,14 +94,13 @@ public class ServerMonitor {
 		notifyAll();
 	}
 
-
 	/**
 	 * Reads the message received from the client. The package only contains 1
 	 * int to represent commands. Therefore the size of the package is only 4
 	 * bytes.
 	 */
 
-	public synchronized void readAndUnpackCommand() {
+	public synchronized void readAndRunCommand() {
 		byte[] message = new byte[MESSAGE_SIZE];
 		try {
 			is.read(message);
@@ -105,14 +110,14 @@ public class ServerMonitor {
 		}
 		ByteBuffer bb = ByteBuffer.wrap(message);
 		command = bb.getInt();
-
+		runCommand();
 		notifyAll();
 	}
 
 	/**
 	 * Interprets the command and performs the correct actions.
 	 */
-	public synchronized void runCommand() {
+	private synchronized void runCommand() {
 		switch (command) {
 		case ClientMonitor.CLOSE_CONNECTION:
 			closeConnection();
@@ -123,18 +128,18 @@ public class ServerMonitor {
 		case ClientMonitor.IDLE:
 			movieMode = false;
 			break;
-		case ClientMonitor.START_CONNECTION:
-			establishConnection();
-			break;
 		default:
 			System.out.println("Invalid command sent to server from client");
 			break;
 		}
 		notifyAll();
 	}
+
 	/**
-	 * While connected images are fetched and sent to the client at the given speed depending on if the MovieMode is active or not.
-	 * Checks if a motion was detected in the latest image, if so then MovieMode is activated and the client is informed.
+	 * While connected images are fetched and sent to the client at the given
+	 * speed depending on if the MovieMode is active or not. Checks if a motion
+	 * was detected in the latest image, if so then MovieMode is activated and
+	 * the client is informed.
 	 */
 	public void write() {
 		try {
@@ -167,18 +172,22 @@ public class ServerMonitor {
 			e.printStackTrace();
 		}
 	}
-/**
- * Fetches the image from the camera, creates a package with a header and the image.
- * @return message, the complete message with header and image. If no image was available then null is returned.
- */
+
+	/**
+	 * Fetches the image from the camera, creates a package with a header and
+	 * the image.
+	 * 
+	 * @return message, the complete message with header and image. If no image
+	 *         was available then null is returned.
+	 */
 	private synchronized byte[] getImage() {
 		byte[] image = new byte[AxisM3006V.IMAGE_BUFFER_SIZE];
 		byte[] imageTime = new byte[AxisM3006V.TIME_ARRAY_SIZE];
 		int length = camera.getJPEG(image, 0);
 		if (length != 0) {
 			camera.getTime(imageTime, 0);
-			byte[] message = packageData(ClientMonitor.IMAGE, length, cameraNbr, imageTime,
-					image);
+			byte[] message = packageData(ClientMonitor.IMAGE, length,
+					cameraNbr, imageTime, image);
 			return message;
 		}
 		return null;
@@ -215,10 +224,15 @@ public class ServerMonitor {
 		return message;
 
 	}
-/**
- * Checks if there was any motion detected and if so, then informs the client.
- * @throws IOException, if the command informing the client of the detected motion was not sent.
- */
+
+	/**
+	 * Checks if there was any motion detected and if so, then informs the
+	 * client.
+	 * 
+	 * @throws IOException
+	 *             , if the command informing the client of the detected motion
+	 *             was not sent.
+	 */
 	private synchronized void motionDetection() throws IOException {
 		if (camera.motionDetected()) {
 			movieMode = true;
@@ -227,9 +241,9 @@ public class ServerMonitor {
 
 			camera.getTime(latestImgTime, 0);
 
-			os.write(packageData(ClientMonitor.COMMAND, 4, cameraNbr, latestImgTime, bb.putInt(1)
-					.array()));
-		} 
+			os.write(packageData(ClientMonitor.COMMAND, 4, cameraNbr,
+					latestImgTime, bb.putInt(1).array()));
+		}
 
 	}
 
