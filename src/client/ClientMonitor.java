@@ -49,9 +49,10 @@ public class ClientMonitor {
 	 */
 	private byte[] data;
 	public static final int CLOSE_CONNECTION = 0;
-	public static final int MOVIE_MODE = 1;
-	public static final int IDLE = 2;
-	public static final int START_CONNECTION = 3;
+	public static final int OPEN_CONNECTION = 1;
+	public static final int MOVIE_MODE = 2;
+	public static final int IDLE = 3;
+
 
 	/**
 	 * Attributes for handling images
@@ -92,7 +93,7 @@ public class ClientMonitor {
 	 * @throws IOException
 	 * 
 	 */
-	public void sendMessageToServer(int serverIndex) throws IOException {
+	public void sendMessageToServer(int serverIndex ,int command) throws IOException {
 		while(!newMode){
 			try {
 				wait();
@@ -101,35 +102,30 @@ public class ClientMonitor {
 				e.printStackTrace();
 			}
 		}
+		this.command = command;
 		switch (command) {
-		case CLOSE_CONNECTION:
+		case CLOSE_CONNECTION: //Closes connection with first server. This server has serverindex 0!!!!!
 			outputStream[serverIndex].write(command);
-			disconnectToServer(serverIndex);
+			disconnectToServer(0);
+			break;
+		case OPEN_CONNECTION:
+			outputStream[serverIndex].write(command);
+			connectToServer(0);
 			break;
 		case MOVIE_MODE:
-			outputStream[serverIndex].write(command);
+			for(int i = 0 ; i < nbrOfSockets; i++){
+			outputStream[i].write(command);
+			}
 			movieMode = true;
 			break;
 		case IDLE:
-			outputStream[serverIndex].write(command);
+			for(int i = 0 ; i < nbrOfSockets; i++){
+				outputStream[i].write(command);
+				}
 			movieMode = false;
-			break;
-		case START_CONNECTION:
-			// outputStream[serverIndex].write(command);
-			connectToServer(serverIndex);
 			break;
 		}
 		notifyAll();
-	}
-
-	/**
-	 * used to allow the buttonHandler to set the command depending on which
-	 * button is pressed.
-	 * 
-	 * @param command
-	 */
-	public synchronized void setCommand(int command) {
-		this.command = command;
 	}
 
 	public synchronized int getNbrOfSockets() {

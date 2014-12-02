@@ -9,7 +9,7 @@ import client.ButtonHandler;
 import client.ClientMonitor;
 
 public class ButtonPanel extends JPanel {
-	private JButton idle, movie, close, connect, sync, async;
+	private JButton idle, movie, connect1, connect2, sync, async;
 	private ButtonHandler buttonHandler;
 	private InfoPanel infoPanel;
 	
@@ -24,13 +24,13 @@ public class ButtonPanel extends JPanel {
 		movie.setActionCommand("MOVIE");
 		movie.addActionListener(buttonHandler);
 		
-		close = new JButton("CLOSE CONNECTION");
-		close.setActionCommand("CLOSE CONNECTION");
-		close.addActionListener(buttonHandler);
+		connect1 = new JButton("OPEN CONNECTION 1");
+		connect1.setActionCommand("OPEN CONNECTION 1");
+		connect1.addActionListener(buttonHandler);
 		
-		connect = new JButton("OPEN CONNECTION");
-		connect.setActionCommand("OPEN CONNECTION");
-		connect.addActionListener(buttonHandler);
+		connect2 = new JButton("OPEN CONNECTION 2");
+		connect2.setActionCommand("OPEN CONNECTION 2");
+		connect2.addActionListener(buttonHandler);
 		
 		sync = new JButton("SYNCHRONIZED");
 		sync.setActionCommand("SYNCHRONIZED");
@@ -42,8 +42,8 @@ public class ButtonPanel extends JPanel {
 		
 		add(idle);
 		add(movie);
-		add(close);
-		add(connect);
+		add(connect1);
+		add(connect2);
 		add(sync);
 		add(async);
 

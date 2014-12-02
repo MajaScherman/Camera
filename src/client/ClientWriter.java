@@ -13,17 +13,17 @@ public class ClientWriter extends Thread {
 	}
 
 	public void run() {
-		while(true){
-			int i;
-			for(i=0;i<mon.getNbrOfSockets();i++){
-			try {
-				mon.sendMessageToServer( i);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				System.out.println("failed to send message to server");
-				e.printStackTrace();
-			}
-			}
-		}
+//		while(true){
+//			int i;
+//			for(i=0;i<mon.getNbrOfSockets();i++){
+//			try {
+//				mon.sendMessageToServer( i);
+//			} catch (IOException e) {
+//				// TODO Auto-generated catch block
+//				System.out.println("failed to send message to server");
+//				e.printStackTrace();
+//			}
+//			}
+//		}
 	}
 }
