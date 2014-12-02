@@ -93,6 +93,14 @@ public class ClientMonitor {
 	 * 
 	 */
 	public void sendMessageToServer(int serverIndex) throws IOException {
+		while(!newMode){
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 		switch (command) {
 		case CLOSE_CONNECTION:
 			outputStream[serverIndex].write(command);
