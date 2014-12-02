@@ -14,7 +14,7 @@ public class Client {
 		ClientMonitor mon = new ClientMonitor(2, addresses);
 		ClientReader cReader0 = new ClientReader(mon, 0);
 		ClientReader cReader1 = new ClientReader(mon, 1);
-		ClientWriter cWriter = new ClientWriter(mon, null);
+		ClientWriter cWriter = new ClientWriter(mon);
 		
 		
 		GUI gui = new GUI(mon);

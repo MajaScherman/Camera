@@ -26,7 +26,7 @@ public class Main {
 		ClientMonitor clientMon = new ClientMonitor(2, addresses);
 		ClientReader cReader0 = new ClientReader(clientMon, 0);
 		ClientReader cReader1 = new ClientReader(clientMon, 1);
-		ClientWriter cWriter = new ClientWriter(clientMon, null);
+		ClientWriter cWriter = new ClientWriter(clientMon);
 
 		cReader0.start();
 		cReader1.start();

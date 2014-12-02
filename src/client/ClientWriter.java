@@ -5,25 +5,20 @@ import java.io.OutputStream;
 
 public class ClientWriter extends Thread {
 	private ClientMonitor mon;
-	private OutputStream os;
 
-	public ClientWriter(ClientMonitor mon, OutputStream stream) {
+	public ClientWriter(ClientMonitor mon) {
 		this.mon = mon;
-		os = stream;
 	}
 
 	public void run() {
-//		while(true){
-//			int i;
-//			for(i=0;i<mon.getNbrOfSockets();i++){
-//			try {
-//				mon.sendMessageToServer( i);
-//			} catch (IOException e) {
-//				// TODO Auto-generated catch block
-//				System.out.println("failed to send message to server");
-//				e.printStackTrace();
-//			}
-//			}
-//		}
+		while (true) {
+
+			try {
+				mon.sendMessageToServer();
+			} catch (IOException e) {
+				System.out.println(e);
+				e.printStackTrace();
+			}
+		}
 	}
 }

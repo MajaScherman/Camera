@@ -12,7 +12,6 @@ public class ClientMonitor {
 	/**
 	 * Attributes for change of modes
 	 */
-	private int command;
 	private boolean syncMode;
 	private boolean movieMode;
 	/**
@@ -67,7 +66,7 @@ public class ClientMonitor {
 									// camera
 
 	/**
-	 * Attributes for handling commands
+	 * Attributes for handling commands in updater
 	 */
 	private int[] commandBuffer;
 	private int putAtC;
@@ -75,6 +74,12 @@ public class ClientMonitor {
 	private int[][] cameraCommands;
 	private int nbrOfCommandsInBuffer;
 
+	/**
+	 * Attributes for handling commands in writer
+	 */
+	private int[] writerCommand;
+	private boolean[] newCommand;
+	
 	public static final int IMAGE_SIZE = 640 * 480 * 3; // REQ 7
 	public static final int IMAGE_BUFFER_SIZE = 125; // Supports 125 images,
 														// which is 5 seconds of
@@ -86,6 +91,8 @@ public class ClientMonitor {
 		movieMode = false;
 		updateGUI = false;
 		socketAddress = socketAddr;
+		writerCommand = new int[nbrOfSockets];
+		newCommand = new boolean[nbrOfSockets];
 		socket = new Socket[nbrOfSockets];
 		isConnected = new boolean[nbrOfSockets];
 		inputStream = new InputStream[nbrOfSockets];
@@ -98,6 +105,12 @@ public class ClientMonitor {
 		getAtC = putAtC = nbrOfCommandsInBuffer = 0;
 	}
 
+	public synchronized void putCommandToWriter(int serverIndex, int command) {
+		writerCommand[serverIndex] = command;
+		newCommand[serverIndex] = true;
+		notifyAll();
+	}
+	
 	/**
 	 * Sends only an int to the server 0=close connection 1=movieMode 2=idle
 	 * 3=connect to server
@@ -105,12 +118,26 @@ public class ClientMonitor {
 	 * @throws IOException
 	 * 
 	 */
-	public synchronized void sendMessageToServer(int serverIndex, int command)
+	public synchronized void sendMessageToServer()
 			throws IOException {
-		System.out.println("command: " + command + " serverIndex :"
-				+ serverIndex);
-		this.command = command;
-		switch (command) {
+		while(!newCommand[0] && !newCommand[1]){
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		int serverIndex;
+		if(newCommand[0]){
+			//gör något med index serverindex 0
+			serverIndex = 0;
+		}else{
+			//gör något med severindex 1
+			serverIndex = 1;
+		}
+		newCommand[serverIndex] = false;
+		notifyAll();
+		switch (writerCommand[serverIndex]) {
 		case CLOSE_CONNECTION: // Closes connection with first server. This
 								// server has serverindex 0!!!!!
 			while (!isConnected[serverIndex]) {
@@ -121,7 +148,7 @@ public class ClientMonitor {
 					e.printStackTrace();
 				}
 			}
-			outputStream[serverIndex].write(command);
+			outputStream[serverIndex].write(writerCommand[serverIndex]);
 			disconnectToServer(serverIndex);
 			break;
 		case OPEN_CONNECTION:
@@ -138,7 +165,7 @@ public class ClientMonitor {
 		case MOVIE_MODE:
 			for (int i = 0; i < nbrOfSockets; i++) {
 				if (isConnected[i]) {
-					outputStream[i].write(command);
+					outputStream[i].write(writerCommand[serverIndex]);
 				}
 			}
 			movieMode = true;
@@ -146,7 +173,7 @@ public class ClientMonitor {
 
 		case IDLE_MODE:
 			for (int i = 0; i < nbrOfSockets; i++) {
-				outputStream[i].write(command);
+				outputStream[i].write(writerCommand[serverIndex]);
 			}
 
 			movieMode = false;
@@ -204,15 +231,14 @@ public class ClientMonitor {
 			// Server must be running before trying to connect
 			String host = socketAddress[serverIndex].getHost();
 			int port = socketAddress[serverIndex].getPortNumber();
-			try {
+			try { 
 				socket[serverIndex] = new Socket(host, port);
 				// Set socket to no send delay
 				socket[serverIndex].setTcpNoDelay(true);
 				// Get input stream
 				inputStream[serverIndex] = socket[serverIndex].getInputStream();
 				// Get output stream
-				outputStream[serverIndex] = socket[serverIndex]
-						.getOutputStream();
+				outputStream[serverIndex] = socket[serverIndex].getOutputStream();
 				isConnected[serverIndex] = true;
 				notifyAll();
 				System.out.println("Server connection with server "
@@ -293,10 +319,9 @@ public class ClientMonitor {
 								"Client have recieved an invalid command");
 
 					}
-					command = commandData;// TODO PUT COMMAND TO BUFFER BLURP
 					newMode = true;
 					updateGUI = true;
-					putCommandToBuffer(command);
+					putCommandToBuffer(commandData);
 					// om det finns en begäran på ett movie mode i paketet måste
 					// command sätts till MOVIEMODE
 					notifyAll();
@@ -411,4 +436,6 @@ public class ClientMonitor {
 		ByteBuffer bb = ByteBuffer.wrap(byteToInt);
 		return bb.getInt();
 	}
+
+
 }
