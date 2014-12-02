@@ -16,7 +16,8 @@ public class ServerReader extends Thread {
 	}
 
 	public void run() {
-		while (true) {
+		System.out.println("ServerReader started");
+		while (!isInterrupted()) {
 			mon.establishConnection();
 			while (mon.isConnected()) {
 				mon.readAndRunCommand();

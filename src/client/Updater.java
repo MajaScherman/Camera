@@ -24,15 +24,17 @@ public class Updater extends Thread {
 				e.printStackTrace();
 			}
 			if (type == ClientMonitor.IMAGE) {
+				System.out.println("update recognized an image update");
 				Image image = mon.getImageFromBuffer();
 				try {
 					gui.setImage(image);
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
-					System.out.println(e);
+					System.out.println("failed to set image in GUI" + e);
 					e.printStackTrace();
 				}
 			} else if (type == ClientMonitor.COMMAND) {
+				System.out.println("update recognized an command update");
 				int command = mon.getCommandFromBuffer();
 				switch (command) {
 				case ClientMonitor.MOVIE_MODE:

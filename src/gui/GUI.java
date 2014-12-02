@@ -54,15 +54,18 @@ public class GUI extends JFrame {
 	}
 
 	public void setImage(Image image) throws Exception {
+		System.out.println("at least I got into setImage method in gUI");
 		if (image.getCameraNbr() < 0 || image.getCameraNbr() > MAXIMUM_NUMBER_OF_CAMERAS) {
 			System.out.println("Camera index is out of range");
 			throw new Exception("Camera index is out of range");
 		}
 		switch (image.getCameraNbr()) {
 		case 0:
+			System.out.println("sets image in first panel...");
 			imageViewer0.refresh(image.getImage());
 			break;
 		case 1:
+			System.out.println("sets image in second panel...");
 			imageViewer1.refresh(image.getImage());
 			break;
 		}

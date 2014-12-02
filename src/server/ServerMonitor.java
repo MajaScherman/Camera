@@ -67,13 +67,13 @@ public class ServerMonitor {
 		} else {
 			try {
 				clientSocket = serverSocket.accept();// blocking until
-								// connection available
+				// connection available
 				is = clientSocket.getInputStream();
 				os = clientSocket.getOutputStream();
 				isConnected = true;
 				notifyAll();
 			} catch (Exception e) {
-				System.out.println("Could not establish connection"+e);
+				System.out.println("Could not establish connection" + e);
 			}
 		}
 	}
@@ -153,8 +153,8 @@ public class ServerMonitor {
 				if (message != null) {
 					System.out.println("message is an image and not null");
 
-					os.write(message);
-
+					os.write(message, 0, BUFFER_LENGTH);
+					System.out.println("printed image to output stream...");
 					lastTimeSentImg = System.currentTimeMillis();
 				} else {
 					System.out.println("could not fetch an image");
@@ -165,23 +165,25 @@ public class ServerMonitor {
 
 					message = getImage();
 					if (message != null) {
-
-						os.write(message);
-
+						System.out.println("image not null in idle mode");
+						os.write(message, 0, BUFFER_LENGTH);
+						System.out
+								.println("printed image to output stream in idle mode...");
 						lastTimeSentImg = System.currentTimeMillis();
 					}
 				} else {
 					long t = lastTimeSentImg + 5000;
 					long diff = t - System.currentTimeMillis();
 					if (diff > 0) {
-
+						System.out.println("try too sleep...sleepy time");
 						Thread.sleep(diff);
-
+						System.out.println("done sleeping lol");
 						message = getImage();
 						if (message != null) {
-
-							os.write(message);
-
+							System.out.println("image was not null lol");
+							os.write(message,0,BUFFER_LENGTH);
+							System.out
+									.println("printed message to outputstream in idle mode");
 							lastTimeSentImg = System.currentTimeMillis();
 						}
 					}
@@ -203,11 +205,13 @@ public class ServerMonitor {
 	 *         was available then null is returned.
 	 */
 	private synchronized byte[] getImage() {
+		System.out.println("inside getImage doin mah thing");
 		byte[] image = new byte[AxisM3006V.IMAGE_BUFFER_SIZE];
 		byte[] imageTime = new byte[AxisM3006V.TIME_ARRAY_SIZE];
 		int length = camera.getJPEG(image, 0);
+		System.out.println(length+"längden på JPEG");
 		if (length != 0) {
-			camera.getTime(imageTime, 0);
+			camera.getTime(imageTime, 0); // second param is offset
 			byte[] message = packageData(ClientMonitor.IMAGE, length,
 					cameraNbr, imageTime, image);
 			return message;
@@ -234,7 +238,7 @@ public class ServerMonitor {
 	 */
 	private synchronized byte[] packageData(int type, int size, int cameraNbr,
 			byte[] time, byte[] data) {
-
+		System.out.println("vi packeterar datan här");
 		ByteBuffer bb = ByteBuffer.allocate(BUFFER_LENGTH);
 		bb.putInt(type);
 		bb.putInt(size);
@@ -260,7 +264,7 @@ public class ServerMonitor {
 			ByteBuffer bb = ByteBuffer.allocate(8);
 			bb.putInt(ClientMonitor.COMMAND);
 			bb.putInt(ClientMonitor.MOVIE_MODE);
-			os.write(bb.array());
+			os.write(bb.array(),0,8);
 			notifyAll();
 		}
 

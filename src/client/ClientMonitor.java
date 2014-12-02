@@ -34,8 +34,7 @@ public class ClientMonitor {
 	/**
 	 * Header attributes
 	 */
-	private byte[] byteToInt; // byte array with size 4, with purpose to
-								// transform tó int
+
 	private int type;
 	public static final int IMAGE = 0;
 	public static final int COMMAND = 1;
@@ -79,7 +78,7 @@ public class ClientMonitor {
 	 */
 	private int[] writerCommand;
 	private boolean[] newCommand;
-	
+
 	public static final int IMAGE_SIZE = 640 * 480 * 3; // REQ 7
 	public static final int IMAGE_BUFFER_SIZE = 125; // Supports 125 images,
 														// which is 5 seconds of
@@ -97,7 +96,6 @@ public class ClientMonitor {
 		isConnected = new boolean[nbrOfSockets];
 		inputStream = new InputStream[nbrOfSockets];
 		outputStream = new OutputStream[nbrOfSockets];
-		byteToInt = new byte[4];
 		timeStamp = new byte[8];
 		this.nbrOfSockets = nbrOfSockets;
 		imageBuffer = new Image[IMAGE_BUFFER_SIZE];
@@ -110,7 +108,7 @@ public class ClientMonitor {
 		newCommand[serverIndex] = true;
 		notifyAll();
 	}
-	
+
 	/**
 	 * Sends only an int to the server 0=close connection 1=movieMode 2=idle
 	 * 3=connect to server
@@ -118,9 +116,8 @@ public class ClientMonitor {
 	 * @throws IOException
 	 * 
 	 */
-	public synchronized void sendMessageToServer()
-			throws IOException {
-		while(!newCommand[0] && !newCommand[1]){
+	public synchronized void sendMessageToServer() throws IOException {
+		while (!newCommand[0] && !newCommand[1]) {
 			try {
 				wait();
 			} catch (InterruptedException e) {
@@ -128,9 +125,9 @@ public class ClientMonitor {
 			}
 		}
 		int serverIndex;
-		if(newCommand[0]){
+		if (newCommand[0]) {
 			serverIndex = 0;
-		}else{
+		} else {
 			serverIndex = 1;
 		}
 		newCommand[serverIndex] = false;
@@ -138,13 +135,13 @@ public class ClientMonitor {
 		switch (writerCommand[serverIndex]) {
 		case CLOSE_CONNECTION: // Closes connection with first server. This
 								// server has serverindex 0!!!!!
-			if(isConnected[serverIndex]) {
-				outputStream[serverIndex].write(writerCommand[serverIndex]);				
+			if (isConnected[serverIndex]) {
+				outputStream[serverIndex].write(writerCommand[serverIndex]);
 				disconnectToServer(serverIndex);
 			}
 			break;
 		case OPEN_CONNECTION:
-			if(!isConnected[serverIndex]) {				
+			if (!isConnected[serverIndex]) {
 				connectToServer(serverIndex);
 			}
 			break;
@@ -217,14 +214,15 @@ public class ClientMonitor {
 			// Server must be running before trying to connect
 			String host = socketAddress[serverIndex].getHost();
 			int port = socketAddress[serverIndex].getPortNumber();
-			try { 
+			try {
 				socket[serverIndex] = new Socket(host, port);
 				// Set socket to no send delay
 				socket[serverIndex].setTcpNoDelay(true);
 				// Get input stream
 				inputStream[serverIndex] = socket[serverIndex].getInputStream();
 				// Get output stream
-				outputStream[serverIndex] = socket[serverIndex].getOutputStream();
+				outputStream[serverIndex] = socket[serverIndex]
+						.getOutputStream();
 				isConnected[serverIndex] = true;
 				notifyAll();
 				System.out.println("Server connection with server "
@@ -265,9 +263,6 @@ public class ClientMonitor {
 		}
 	}
 
-	// TODO handle button to command stuff so we can get every command not only
-	// 2, and send it to writer thingeingingeee
-
 	/**
 	 * This method receives messages from the server.
 	 * 
@@ -276,6 +271,7 @@ public class ClientMonitor {
 	 * @throws Exception
 	 */
 	public synchronized void listenToServer(int serverIndex) throws Exception {
+		System.out.println("ger maja en ack ");
 		if (serverIndex >= 0 && serverIndex < nbrOfSockets) {
 			try {
 				while (!isConnected[serverIndex]) {
@@ -312,7 +308,7 @@ public class ClientMonitor {
 					// command sätts till MOVIEMODE
 					notifyAll();
 				} else {
-					throw new Exception();
+					throw new Exception("You got a non existing type :D");
 				}
 				// TODO verifiera att paket är korrekt
 			} catch (IOException e) {
@@ -355,7 +351,7 @@ public class ClientMonitor {
 		commandBuffer[putAtC] = com;
 		putAtC++;
 		nbrOfCommandsInBuffer++;
-		if (putAtC > 125) {
+		if (putAtC >= 125) {
 			putAtC = 0;
 		}
 		notifyAll();
@@ -373,7 +369,7 @@ public class ClientMonitor {
 		int com = commandBuffer[getAtC];
 		getAtC++;
 		nbrOfCommandsInBuffer--;
-		if (getAtC > 125) {
+		if (getAtC >= 125) {
 			getAtC = 0;
 		}
 		notifyAll();
@@ -384,7 +380,7 @@ public class ClientMonitor {
 		imageBuffer[putAt] = image;
 		putAt++;
 		nbrOfImgsInBuffer++;
-		if (putAt > 125) {
+		if (putAt >= 125) {
 			putAt = 0;
 		}
 		notifyAll();
@@ -402,7 +398,7 @@ public class ClientMonitor {
 		Image image = imageBuffer[getAt];
 		getAt++;
 		nbrOfImgsInBuffer--;
-		if (getAt > 125) {
+		if (getAt >= 125) {
 			getAt = 0;
 		}
 		notifyAll();
@@ -410,18 +406,20 @@ public class ClientMonitor {
 	}
 
 	private synchronized int readInt(int serverIndex) {
+		System.out.println("readar ints");
+		byte[] byteToInt = new byte[4];
 
-		// Hämta fyra bytes
 		try {
 			inputStream[serverIndex].read(byteToInt);
+			System.out.println(byteToInt);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
+			System.out.println(e);
 			e.printStackTrace();
 		}
 		// Konvertera till int
 		ByteBuffer bb = ByteBuffer.wrap(byteToInt);
 		return bb.getInt();
 	}
-
 
 }
