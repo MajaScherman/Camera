@@ -53,10 +53,10 @@ public class GUI extends JFrame {
 		frame.setVisible(true);
 	}
 
-	public void setImage(Image image) {
+	public void setImage(Image image) throws Exception {
 		if (image.getCameraNbr() < 0 || image.getCameraNbr() > MAXIMUM_NUMBER_OF_CAMERAS) {
 			System.out.println("Camera index is out of range");
-			// TODO Throw exception
+			throw new Exception("Camera index is out of range");
 		}
 		switch (image.getCameraNbr()) {
 		case 0:

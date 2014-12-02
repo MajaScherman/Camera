@@ -22,7 +22,13 @@ public class Updater extends Thread {
 			}
 			if (type == ClientMonitor.IMAGE) {
 				Image image = mon.getImageFromBuffer();
-				gui.setImage(image);
+				try {
+					gui.setImage(image);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					System.out.println(e);
+					e.printStackTrace();
+				}
 			} else if (type == ClientMonitor.COMMAND) {
 				int command = mon.getCommandFromBuffer();
 				//TODO gui.setCommand(command);
