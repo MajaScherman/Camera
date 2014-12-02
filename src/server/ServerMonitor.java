@@ -86,12 +86,12 @@ public class ServerMonitor {
 				clientSocket.close();
 				serverSocket.close();
 				isConnected = false;
+				notifyAll();
 			} catch (IOException e) {
 				System.out.println("Could not close connection");
 				e.printStackTrace();
 			}
 		}
-		notifyAll();
 	}
 
 	/**
@@ -142,40 +142,69 @@ public class ServerMonitor {
 	 * the client is informed.
 	 */
 	public void write() {
-		try {
-			while (!isConnected) {
-				wait();
-			}
+		if (!isConnected) {
+			establishConnection();
+		}
 
-			byte[] message;
-			if (movieMode) {
+		byte[] message;
+		if (movieMode) {
+			message = getImage();
+			if (message != null) {
+				System.out.println("message is an image and not null");
+				try {
+					os.write(message);
+				} catch (IOException e) {
+					System.out.println("Message could not be sent, check servermonitor.write()");
+					e.printStackTrace();
+				}
+				lastTimeSentImg = System.currentTimeMillis();
+			} else {
+				System.out.println("could not fetch an image");
+			}
+		} else {
+
+			if (System.currentTimeMillis() - lastTimeSentImg >= 5000) {
+
 				message = getImage();
 				if (message != null) {
-					os.write(message);
+					try {
+						os.write(message);
+					} catch (IOException e) {
+						System.out.println("Message could not be sent2");
+
+						e.printStackTrace();
+					}
 					lastTimeSentImg = System.currentTimeMillis();
-				} else {
-					System.out.println("could not fetch an image");
 				}
 			} else {
-				if (System.currentTimeMillis() - lastTimeSentImg >= 5000) {
-					message = getImage();
-					os.write(message);
-					lastTimeSentImg = System.currentTimeMillis();
-				} else {
-					long t = lastTimeSentImg + 5000;
-					long diff = t - System.currentTimeMillis();
-					if (diff > 0) {
+				long t = lastTimeSentImg + 5000;
+				long diff = t - System.currentTimeMillis();
+				if (diff > 0) {
+					try {
 						Thread.sleep(diff);
-						message = getImage();
-						os.write(message);
+					} catch (InterruptedException e) {
+						System.out.println("sleep failed");
+						e.printStackTrace();
+					}
+					message = getImage();
+					if (message != null) {
+						try {
+							os.write(message);
+						} catch (IOException e) {
+							System.out.println("Message could not be sent3");
+							e.printStackTrace();
+						}
+						lastTimeSentImg = System.currentTimeMillis();
 					}
 				}
-				motionDetection();
-				notifyAll();
 			}
-		} catch (Exception e) {
-			System.out.println("Message could not be sent");
-			e.printStackTrace();
+			try {
+				motionDetection();
+			} catch (IOException e) {
+				System.out.println("Motiondetection failed");
+				e.printStackTrace();
+			}
+			notifyAll();
 		}
 	}
 

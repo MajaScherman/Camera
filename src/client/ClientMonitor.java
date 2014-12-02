@@ -145,10 +145,10 @@ public class ClientMonitor {
 			break;
 
 		case IDLE_MODE:
-			for(int i = 0 ; i < nbrOfSockets; i++){
+			for (int i = 0; i < nbrOfSockets; i++) {
 				outputStream[i].write(command);
-				}
-			
+			}
+
 			movieMode = false;
 			break;
 		}
@@ -157,15 +157,6 @@ public class ClientMonitor {
 
 	public synchronized int getNbrOfSockets() {
 		return nbrOfSockets;
-	}
-
-	/**
-	 * Request to update the GUI, meaning an image has been sent and the update
-	 * should be notified.
-	 */
-	public synchronized void updateRequest() {
-		updateGUI = true;
-		notifyAll();
 	}
 
 	/**
@@ -273,51 +264,54 @@ public class ClientMonitor {
 	 * @throws Exception
 	 */
 	public synchronized void listenToServer(int serverIndex) throws Exception {
-		// TODO Kolla att serverindex är inom bounds
-		try {
-			while (!isConnected[serverIndex]) {
-				wait();
-			}
-			// Read header - read is blocking
-			type = readInt(serverIndex);
-			System.out.println("Type is " + type);
-			if (type == IMAGE) {
-				size = readInt(serverIndex);
-				System.out.println("Package size " + size);
-				cameraNumber = readInt(serverIndex);
-				System.out.println("Camera number is " + cameraNumber);
-				inputStream[serverIndex].read(timeStamp);
-				System.out.println("Timestamp is " + timeStamp);
-
-				Image image = new Image(cameraNumber, timeStamp,
-						readPackage(serverIndex));
-				newImage = true;
-				updateGUI = true;
-				putImageToBuffer(image);// data contains the image
-				notifyAll();
-			} else if (type == COMMAND) {
-				int commandData = readInt(serverIndex);
-				if (commandData != MOVIE_MODE) {
-					throw new Exception(
-							"Client have recieved an invalid command");
-
+		if (serverIndex >= 0 && serverIndex < nbrOfSockets) {
+			try {
+				while (!isConnected[serverIndex]) {
+					wait();
 				}
-				command = commandData;// TODO PUT COMMAND TO BUFFER BLURP
-				newMode = true;
-				updateGUI = true;
-				putCommandToBuffer(command);
-				// om det finns en begäran på ett movie mode i paketet måste
-				// command sätts till MOVIEMODE
-				notifyAll();
-			} else {
-				throw new Exception();
+				// Read header - read is blocking
+				type = readInt(serverIndex);
+				System.out.println("Type is " + type);
+				if (type == IMAGE) {
+					size = readInt(serverIndex);
+					System.out.println("Package size " + size);
+					cameraNumber = readInt(serverIndex);
+					System.out.println("Camera number is " + cameraNumber);
+					inputStream[serverIndex].read(timeStamp);
+					System.out.println("Timestamp is " + timeStamp);
+
+					Image image = new Image(cameraNumber, timeStamp,
+							readPackage(serverIndex));
+					newImage = true;
+					updateGUI = true;
+					putImageToBuffer(image);// data contains the image
+					notifyAll();
+				} else if (type == COMMAND) {
+					int commandData = readInt(serverIndex);
+					if (commandData != MOVIE_MODE) {
+						throw new Exception(
+								"Client have recieved an invalid command");
+
+					}
+					command = commandData;// TODO PUT COMMAND TO BUFFER BLURP
+					newMode = true;
+					updateGUI = true;
+					putCommandToBuffer(command);
+					// om det finns en begäran på ett movie mode i paketet måste
+					// command sätts till MOVIEMODE
+					notifyAll();
+				} else {
+					throw new Exception();
+				}
+				// TODO verifiera att paket är korrekt
+			} catch (IOException e) {
+				// Occurs in read method of
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
-			// TODO verifiera att paket är korrekt
-		} catch (IOException e) {
-			// Occurs in read method of
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+		} else {
+			System.out.println("Check your server indices");
 		}
 	}
 
