@@ -111,11 +111,9 @@ public class ServerMonitor {
 			try {
 				read = is.read();
 				//lägg i message
-				if(read != -1){
 				message[tempIndex] = (byte) read;
 				tempIndex++;
 				bytesLeft--;
-				}
 			} catch (IOException e) {
 				System.out.println("error in readandruncommand method server side" + e);
 				e.printStackTrace();
@@ -124,9 +122,9 @@ public class ServerMonitor {
 		
 		// Konvertera till int
 		ByteBuffer bb = ByteBuffer.wrap(message);
-		System.out.println("Last header int was: " + bb.getInt(0));
+		System.out.println("Last header serverside int was: " + bb.getInt(0));
 		int command = bb.getInt(0);
-		System.out.println("Command was: " + command);
+		System.out.println("Command server side was: " + command);
 		runCommand(command);
 		notifyAll();
 	}
@@ -261,12 +259,12 @@ public class ServerMonitor {
 	private synchronized byte[] packageData(int type, int size, int cameraNbr,
 			byte[] time, byte[] data) {
 		System.out.println("vi packeterar datan här serversida");
-		ByteBuffer bb = ByteBuffer.allocate(BUFFER_LENGTH);
+		ByteBuffer bb = ByteBuffer.allocate(12+AxisM3006V.TIME_ARRAY_SIZE+size);
 		bb.putInt(type);
 		bb.putInt(size);
 		bb.putInt(cameraNbr);// 4 bytes for every int
 		bb.put(time);
-		bb.put(data);// image or command
+		bb.put(data,0,size);// image or command
 		byte[] message = null;
 		if(bb.hasArray()){
 		message = bb.array();
@@ -288,6 +286,7 @@ public class ServerMonitor {
 	 */
 	private synchronized void motionDetection() throws IOException {
 		if (camera.motionDetected()) {
+			if(!movieMode){
 			movieMode = true;
 			ByteBuffer bb = ByteBuffer.allocate(8);
 			bb.putInt(ClientMonitor.COMMAND);
@@ -295,6 +294,7 @@ public class ServerMonitor {
 			os.write(bb.array(),0,8);
 			os.flush();
 			notifyAll();
+			}
 		}
 
 	}

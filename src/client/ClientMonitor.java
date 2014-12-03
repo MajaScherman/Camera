@@ -23,6 +23,7 @@ public class ClientMonitor {
 								// in data
 	private boolean newMode; // The updater checks if a new mode has arrived in
 								// data
+	private boolean finishedUpdating;
 	/**
 	 * Attributes for connecting
 	 */
@@ -80,6 +81,9 @@ public class ClientMonitor {
 	public static final int IMAGE_BUFFER_SIZE = 125; // Supports 125 images,
 														// which is 5 seconds of
 														// video in 25 fps
+	public static final int COMMAND_BUFFER_SIZE = 125; // Supports 125 images,
+	// which is 5 seconds of
+	// video in 25 fps
 	public static final int NUMBER_OF_CAMERAS = 2;
 
 	public ClientMonitor(int nbrOfSockets, SocketAddress[] socketAddr) {
@@ -95,8 +99,10 @@ public class ClientMonitor {
 		outputStream = new OutputStream[nbrOfSockets];
 		this.nbrOfSockets = nbrOfSockets;
 		imageBuffer = new Image[IMAGE_BUFFER_SIZE];
+		commandBuffer = new int[COMMAND_BUFFER_SIZE];
 		getAt = putAt = nbrOfImgsInBuffer = 0;
 		getAtC = putAtC = nbrOfCommandsInBuffer = 0;
+		finishedUpdating = true;
 	}
 
 	public synchronized void putCommandToWriter(int serverIndex, int command) {
@@ -174,7 +180,7 @@ public class ClientMonitor {
 	public synchronized void listenToServer(int serverIndex) throws Exception {
 		if (serverIndex >= 0 && serverIndex < nbrOfSockets) {
 			try {
-				while (!isConnected[serverIndex]) {
+				while (!isConnected[serverIndex] || !finishedUpdating) {
 					wait();
 				}
 				System.out.println("read header client side");
@@ -196,6 +202,7 @@ public class ClientMonitor {
 							readByteArray(serverIndex, size));
 					newImage = true;
 					updateGUI = true;
+					finishedUpdating = false;
 					putImageToBuffer(image);// data contains the image
 					notifyAll();
 				} else if (type == COMMAND) {
@@ -210,8 +217,6 @@ public class ClientMonitor {
 					newMode = true;
 					updateGUI = true;
 					putCommandToBuffer(commandData);
-					// om det finns en begäran på ett movie mode i paketet måste
-					// command sätts till MOVIEMODE
 					notifyAll();
 				} else {
 					throw new Exception("You got a non existing type :D");
@@ -326,7 +331,7 @@ public class ClientMonitor {
 		commandBuffer[putAtC] = com;
 		putAtC++;
 		nbrOfCommandsInBuffer++;
-		if (putAtC >= 125) {
+		if (putAtC >= COMMAND_BUFFER_SIZE) {
 			putAtC = 0;
 		}
 		notifyAll();
@@ -344,7 +349,7 @@ public class ClientMonitor {
 		int com = commandBuffer[getAtC];
 		getAtC++;
 		nbrOfCommandsInBuffer--;
-		if (getAtC >= 125) {
+		if (getAtC >= COMMAND_BUFFER_SIZE) {
 			getAtC = 0;
 		}
 		notifyAll();
@@ -392,11 +397,9 @@ public class ClientMonitor {
 			try {
 				read = inputStream[serverIndex].read();
 				// lägg i byteToInt
-				if (read != -1) {
 					temp[tempIndex] = (byte) read;
 					tempIndex++;
 					bytesLeft--;
-				}
 			} catch (IOException e) {
 				System.out.println("error in readint method client side" + e);
 				e.printStackTrace();
@@ -406,7 +409,6 @@ public class ClientMonitor {
 	}
 
 	private synchronized int readInt(int serverIndex) {
-		System.out.println("Reading header ints client side");
 		byte[] temp = new byte[4];
 		int bytesLeft = 4;
 		int tempIndex = 0;
@@ -415,12 +417,10 @@ public class ClientMonitor {
 			int read;
 			try {
 				read = inputStream[serverIndex].read();
-				if (read != -1) {
 					// lägg i temp
 					temp[tempIndex] = (byte) read;
 					tempIndex++;
 					bytesLeft--;
-				}
 			} catch (IOException e) {
 				System.out.println("error in readint method client side" + e);
 				e.printStackTrace();
@@ -430,6 +430,11 @@ public class ClientMonitor {
 		// Konvertera till int
 		ByteBuffer bb = ByteBuffer.wrap(temp);
 		return bb.getInt(0);
+	}
+
+	public synchronized void setFinishedUpdating() {
+		finishedUpdating = true;
+		notifyAll();
 	}
 
 }
