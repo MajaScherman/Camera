@@ -31,7 +31,7 @@ public class ImageViewer extends JPanel {
 		label1.setFont(label1.getFont().deriveFont(50f));
 		label1.setHorizontalAlignment(SwingConstants.CENTER);
 		setLayout(new BorderLayout());
-		
+		// TODO set visible to label1!!!!!!
 		add(imageIcon, BorderLayout.NORTH);
 		add(label1, BorderLayout.SOUTH);
 
