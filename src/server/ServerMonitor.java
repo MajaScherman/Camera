@@ -44,6 +44,7 @@ public class ServerMonitor {
 		this.camera = camera;
 		camera.init();
 		camera.setProxy(hostAddress, port);
+		movieMode = false;
 		lastTimeSentImg = System.currentTimeMillis();
 		try {
 			serverSocket = new ServerSocket(port);
@@ -159,12 +160,12 @@ public class ServerMonitor {
 	 * the client is informed.
 	 */
 	public synchronized void write() {
-		//TODO Refactor this method
 		try {
 			while (!isConnected) {
 				wait();
 			}
 
+			motionDetection();
 			byte[] message;
 			if (movieMode) {
 				message = getImage();
@@ -175,43 +176,32 @@ public class ServerMonitor {
 					System.out
 							.println("printed image to output stream in movie mode");
 					lastTimeSentImg = System.currentTimeMillis();
+					notifyAll();
+					System.out.println("time for snding image:"
+							+ lastTimeSentImg);
 				} else {
 					System.out.println("could not fetch an image");
 				}
 			} else {
+				long timeUntilAllowed = lastTimeSentImg + 5000;
+				long diff = timeUntilAllowed - System.currentTimeMillis();
+				while (diff >= 0) {
 
-				if (System.currentTimeMillis() - lastTimeSentImg >= 5000) {
+					Thread.sleep(diff);
+					diff = timeUntilAllowed - System.currentTimeMillis();
 
-					message = getImage();
-					if (message != null) {
-						System.out.println("image not null in idle mode");
-						os.write(message, 0, message.length);
-						System.out
-								.println("printed image to output stream in idle mode...");
-						lastTimeSentImg = System.currentTimeMillis();
-					} else {
-						System.out
-								.println("Null was returned  in idle mode server side");
-					}
-				} else {
-					long t = lastTimeSentImg + 5000;
-					long diff = t - System.currentTimeMillis();
-					if (diff > 0) {
-						System.out.println("try too sleep...sleepy time");
-						Thread.sleep(diff);
-						System.out.println("done sleeping lol");
-						message = getImage();
-						if (message != null) {
-							System.out.println("image was not null lol");
-							os.write(message, 0, message.length);
-							System.out
-									.println("printed message to outputstream in idle mode");
-							lastTimeSentImg = System.currentTimeMillis();
-						}
-					}
 				}
+				message = getImage();
+				if (message != null) {
+					os.write(message, 0, message.length);
+					lastTimeSentImg = System.currentTimeMillis();
+					notifyAll();
+				}else{
+					System.out.println("write in server failed, message was null in idle mode");
+				}
+				
+
 			}
-			motionDetection();
 		} catch (Exception e) {
 			System.out.println("Write failed");
 			e.printStackTrace();
@@ -269,7 +259,7 @@ public class ServerMonitor {
 		bb.putInt(length);
 		bb.putInt(cameraNbr);// 4 bytes for every int
 		bb.put(time);
-		bb.put(image, 0, length);// image or command
+		bb.put(image, 0, length);
 		byte[] message = null;
 		if (bb.hasArray()) {
 			message = bb.array();
@@ -299,7 +289,6 @@ public class ServerMonitor {
 				bb.putInt(ClientMonitor.COMMAND);
 				bb.putInt(ClientMonitor.MOVIE_MODE);
 				os.write(bb.array(), 0, 8);
-				os.flush();
 				notifyAll();
 			}
 		}
