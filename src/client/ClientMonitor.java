@@ -219,13 +219,22 @@ public class ClientMonitor {
 						int cameraNumber = readInt(serverIndex);
 						System.out.println("Camera number client side is "
 								+ cameraNumber);
-						byte[] timeStamp = readByteArray(serverIndex, 8);
+						
+						byte [] temp = readByteArray(serverIndex, 8);
+						ByteBuffer bb = ByteBuffer.wrap(temp);
+						long timeStamp = bb.getLong();
 
 						System.out.println("Timestamp client side is "
-								+ Arrays.toString(timeStamp));
-
-						Image image = new Image(cameraNumber, timeStamp,
+								+ timeStamp);
+						
+						long delay = System.currentTimeMillis()-timeStamp;
+						
+						System.out.println("Delay client side is "
+								+ delay);
+						
+						Image image = new Image(cameraNumber, timeStamp, delay,
 								readByteArray(serverIndex, size));
+						
 						newImage = true;
 						updateGUI = true;
 						finishedUpdating = false;

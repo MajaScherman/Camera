@@ -3,12 +3,14 @@ package client;
 public class Image {
 	private int cameraNbr;
 	private byte[] image;
-	private byte[] timeStamp;
+	private long timeStamp;
+	private long delay;
 	
-	public Image(int cameraNbr, byte[] timeStamp, byte[] image) {
+	public Image(int cameraNbr, long timeStamp, long delay, byte[] image) {
 		this.cameraNbr = cameraNbr;
 		this.image = image;
 		this.timeStamp = timeStamp;
+		this.delay= delay;
 	}
 
 	public int getCameraNbr() {
@@ -19,7 +21,7 @@ public class Image {
 		return image;
 	}
 	
-	public byte[]  getTimeStamp(){
+	public long  getTimeStamp(){
 		return timeStamp;
 	}
 }
