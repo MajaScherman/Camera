@@ -18,6 +18,7 @@ public class GUI extends JFrame {
 	private InfoPanel infoPanel;
 	private ButtonPanel buttonPanel;
 	private ButtonHandler buttonHandler;
+	private DelayPanel delay1, delay2;
 	
 
 	private byte[] jpeg = new byte[AxisM3006V.IMAGE_BUFFER_SIZE];
@@ -43,6 +44,13 @@ public class GUI extends JFrame {
 		imageViewer1.setBorder(blackline);
 		frame.getContentPane().add(imageViewer1);
 
+		//Delay panel
+//		delay1 = new DelayPanel();
+//		frame.getContentPane().add(delay1);
+//		
+//		delay2 = new DelayPanel();
+//		frame.getContentPane().add(delay2);
+//		
 		// The panel containing information about states
 		infoPanel = new InfoPanel();
 		frame.getContentPane().add(infoPanel);
