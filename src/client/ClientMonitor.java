@@ -352,6 +352,7 @@ public class ClientMonitor {
 		if (getAtC >= COMMAND_BUFFER_SIZE) {
 			getAtC = 0;
 		}
+		finishedUpdating = true;
 		notifyAll();
 		return com;
 	}
@@ -383,6 +384,7 @@ public class ClientMonitor {
 		if (getAt >= 125) {
 			getAt = 0;
 		}
+		finishedUpdating = true;
 		notifyAll();
 		return image;
 	}
@@ -409,6 +411,7 @@ public class ClientMonitor {
 	}
 
 	private synchronized int readInt(int serverIndex) {
+		System.out.println("Reading ints");
 		byte[] temp = new byte[4];
 		int bytesLeft = 4;
 		int tempIndex = 0;
@@ -430,11 +433,6 @@ public class ClientMonitor {
 		// Konvertera till int
 		ByteBuffer bb = ByteBuffer.wrap(temp);
 		return bb.getInt(0);
-	}
-
-	public synchronized void setFinishedUpdating() {
-		finishedUpdating = true;
-		notifyAll();
 	}
 
 }

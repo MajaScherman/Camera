@@ -18,7 +18,6 @@ public class Updater extends Thread {
 			int type = -1;
 			try {
 				type = mon.checkUpdate();
-				mon.setFinishedUpdating();
 				System.out.println("Type detected in updater is: " + type);
 			} catch (Exception e) {
 				System.out.println(e);

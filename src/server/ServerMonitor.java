@@ -285,6 +285,7 @@ public class ServerMonitor {
 	 *             was not sent.
 	 */
 	private synchronized void motionDetection() throws IOException {
+		System.out.println("Checking motions");
 		if (camera.motionDetected()) {
 			if(!movieMode){
 			movieMode = true;
