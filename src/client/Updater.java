@@ -6,15 +6,14 @@ import gui.InfoPanel;
 public class Updater extends Thread {
 	private ClientMonitor mon;
 	private GUI gui;
-	private InfoPanel infoPanel;
 
-	public Updater(ClientMonitor mon, GUI gui, InfoPanel infoPanel) {
+	public Updater(ClientMonitor mon, GUI gui) {
 		this.mon = mon;
 		this.gui = gui;
-		this.infoPanel = infoPanel;
 	}
 
 	public void run() {
+		System.out.println("Updater started");
 		while (!isInterrupted()) {
 			int type = -1;
 			try {
@@ -36,19 +35,7 @@ public class Updater extends Thread {
 			} else if (type == ClientMonitor.COMMAND) {
 				System.out.println("update recognized an command update");
 				int command = mon.getCommandFromBuffer();
-				switch (command) {
-				case ClientMonitor.MOVIE_MODE:
-					infoPanel.setLabelText(2, "Movie Mode");
-					break;
-				case ClientMonitor.ASYNCHRONIZED:
-					infoPanel.setLabelText(1, "Asynchronized Mode");
-					break;
-				case ClientMonitor.SYNCHRONIZED:
-					infoPanel.setLabelText(1, "Synchronized Mode");
-					break;
-				default:
-					break;
-				}
+				gui.sendCommandToInfoPanel(command);
 
 			}
 		}

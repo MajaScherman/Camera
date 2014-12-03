@@ -6,8 +6,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-
-import se.lth.cs.eda040.fakecamera.AxisM3006V;
+import java.util.Arrays;
 
 public class ClientMonitor {
 
@@ -39,7 +38,6 @@ public class ClientMonitor {
 
 	public static final int IMAGE = 0;
 	public static final int COMMAND = 1;
-	
 
 	/**
 	 * Data in packets
@@ -131,9 +129,10 @@ public class ClientMonitor {
 		newCommand[serverIndex] = false;
 		notifyAll();
 		switch (writerCommand[serverIndex]) {
-		case CLOSE_CONNECTION: 
+		case CLOSE_CONNECTION:
 			if (isConnected[serverIndex]) {
 				outputStream[serverIndex].write(writerCommand[serverIndex]);
+				outputStream[serverIndex].flush();
 				disconnectToServer(serverIndex);
 			}
 			break;
@@ -146,6 +145,7 @@ public class ClientMonitor {
 			for (int i = 0; i < nbrOfSockets; i++) {
 				if (isConnected[i]) {
 					outputStream[i].write(writerCommand[serverIndex]);
+					outputStream[serverIndex].flush();
 				}
 			}
 			movieMode = true;
@@ -153,17 +153,79 @@ public class ClientMonitor {
 
 		case IDLE_MODE:
 			for (int i = 0; i < nbrOfSockets; i++) {
-				outputStream[i].write(writerCommand[serverIndex]);
+				if (isConnected[i]) {
+					outputStream[i].write(writerCommand[serverIndex]);
+					outputStream[serverIndex].flush();
+				}
 			}
-
 			movieMode = false;
 			break;
 		}
 		notifyAll();
 	}
 
-	public synchronized int getNbrOfSockets() {
-		return nbrOfSockets;
+	/**
+	 * This method receives messages from the server.
+	 * 
+	 * @param server
+	 *            The server to listen to starting from index 0
+	 * @throws Exception
+	 */
+	public synchronized void listenToServer(int serverIndex) throws Exception {
+		if (serverIndex >= 0 && serverIndex < nbrOfSockets) {
+			try {
+				while (!isConnected[serverIndex]) {
+					wait();
+				}
+				System.out.println("read header client side");
+				// Read header - read is blocking
+				int type = readInt(serverIndex);
+				System.out.println("Type is " + type);
+				if (type == IMAGE) {
+					int size = readInt(serverIndex);
+					System.out.println("Package size client side JPEG" + size);
+					int cameraNumber = readInt(serverIndex);
+					System.out.println("Camera number client side is "
+							+ cameraNumber);
+					byte[] timeStamp = readByteArray(serverIndex, 8);
+
+					System.out.println("Timestamp client side is "
+							+ Arrays.toString(timeStamp));
+
+					Image image = new Image(cameraNumber, timeStamp,
+							readByteArray(serverIndex, size));
+					newImage = true;
+					updateGUI = true;
+					putImageToBuffer(image);// data contains the image
+					notifyAll();
+				} else if (type == COMMAND) {
+					int commandData = readInt(serverIndex);
+					System.out.println("command data client side is"
+							+ commandData);
+					if (commandData != MOVIE_MODE) {
+						throw new Exception(
+								"Client have recieved an invalid command");
+
+					}
+					newMode = true;
+					updateGUI = true;
+					putCommandToBuffer(commandData);
+					// om det finns en begäran på ett movie mode i paketet måste
+					// command sätts till MOVIEMODE
+					notifyAll();
+				} else {
+					throw new Exception("You got a non existing type :D");
+				}
+				// TODO verifiera att paket är korrekt
+			} catch (IOException e) {
+				// Occurs in read method of
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		} else {
+			System.out.println("Check your server indices");
+		}
 	}
 
 	/**
@@ -260,105 +322,6 @@ public class ClientMonitor {
 		}
 	}
 
-	/**
-	 * This method receives messages from the server.
-	 * 
-	 * @param server
-	 *            The server to listen to starting from index 0
-	 * @throws Exception
-	 */
-	public synchronized void listenToServer(int serverIndex) throws Exception {
-		if (serverIndex >= 0 && serverIndex < nbrOfSockets) {
-			try {
-				while (!isConnected[serverIndex]) {
-					wait();
-				}
-				System.out.println("read header client side");
-				// Read header - read is blocking
-				int type = readInt(serverIndex);
-				System.out.println("Type is " + type);
-				if (type == IMAGE) {
-					int size = readInt(serverIndex);
-					System.out.println("Package size JPEG" + size);
-					int cameraNumber = readInt(serverIndex);
-					System.out.println("Camera number is " + cameraNumber);
-					byte[] timeStamp = new byte[8];
-					int bytesRead  = 0;
-					int bytesLeft  = timeStamp.length;
-					int status;
-
-					// We have to keep reading until -1 (meaning "end of file") is
-					// returned. The socket (which the stream is connected to)
-					// does not wait until all data is available; instead it
-					// returns if nothing arrived for some (short) time.
-					do {
-						status = inputStream[serverIndex].read(timeStamp, bytesRead, bytesLeft);
-						// The 'status' variable now holds the no. of bytes read,
-						// or -1 if no more data is available
-						if (status > 0) {
-							bytesRead += status;
-							bytesLeft -= status;
-						}
-					} while (bytesRead >= 0);
-					System.out.println("Timestamp is " + timeStamp);
-
-					Image image = new Image(cameraNumber, timeStamp,
-							readPackage(serverIndex, size));
-					newImage = true;
-					updateGUI = true;
-					putImageToBuffer(image);// data contains the image
-					notifyAll();
-				} else if (type == COMMAND) {
-					int commandData = readInt(serverIndex);
-					if (commandData != MOVIE_MODE) {
-						throw new Exception(
-								"Client have recieved an invalid command");
-
-					}
-					newMode = true;
-					updateGUI = true;
-					putCommandToBuffer(commandData);
-					// om det finns en begäran på ett movie mode i paketet måste
-					// command sätts till MOVIEMODE
-					notifyAll();
-				} else {
-					throw new Exception("You got a non existing type :D");
-				}
-				// TODO verifiera att paket är korrekt
-			} catch (IOException e) {
-				// Occurs in read method of
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		} else {
-			System.out.println("Check your server indices");
-		}
-	}
-
-	private synchronized byte[] readPackage(int serverIndex, int size) throws IOException {
-		// Now load the JPEG image.
-		data = new byte[size];
-		int bytesRead = 0;
-		int bytesLeft = size;
-		int status;
-
-		// We have to keep reading until -1 (meaning "end of file") is
-		// returned. The socket (which the stream is connected to)
-		// does not wait until all data is available; instead it
-		// returns if nothing arrived for some (short) time.
-		do {
-			status = inputStream[serverIndex].read(data, bytesRead, bytesLeft);
-			// The 'status' variable now holds the no. of bytes read,
-			// or -1 if no more data is available
-			if (status > 0) {
-				bytesRead += status;
-				bytesLeft -= status;
-			}
-		} while (bytesRead >= 0);
-		return data;
-	}
-
 	private synchronized void putCommandToBuffer(int com) {
 		commandBuffer[putAtC] = com;
 		putAtC++;
@@ -389,6 +352,7 @@ public class ClientMonitor {
 	}
 
 	private synchronized void putImageToBuffer(Image image) {
+		System.out.println("putting image in buffer");
 		imageBuffer[putAt] = image;
 		putAt++;
 		nbrOfImgsInBuffer++;
@@ -407,6 +371,7 @@ public class ClientMonitor {
 				e.printStackTrace();
 			}
 		}
+		System.out.println("collecting an image");
 		Image image = imageBuffer[getAt];
 		getAt++;
 		nbrOfImgsInBuffer--;
@@ -416,36 +381,55 @@ public class ClientMonitor {
 		notifyAll();
 		return image;
 	}
-	
-	private synchronized int readInt(int serverIndex) {
-		byte[] byteToInt = new byte[4];
-		int bytesRead = 0;
-		int bytesLeft = 4;
-		int status;
-		// We have to keep reading until -1 (meaning "end of file") is
-		// returned. The socket (which the stream is connected to)
-		// does not wait until all data is available; instead it
-		// returns if nothing arrived for some (short) time.
-		try {
-			do {
 
-				status = inputStream[serverIndex].read(byteToInt, bytesRead,
-						bytesLeft);
-
-				// The 'status' variable now holds the no. of bytes read,
-				// or -1 if no more data is available
-				if (status > 0) {
-					bytesRead += status;
-					bytesLeft -= status;
+	private synchronized byte[] readByteArray(int serverIndex, int size) {
+		byte[] temp = new byte[size];
+		int bytesLeft = size;
+		int tempIndex = 0;
+		while (bytesLeft > 0) {
+			// läs en byte
+			int read;
+			try {
+				read = inputStream[serverIndex].read();
+				// lägg i byteToInt
+				if (read != -1) {
+					temp[tempIndex] = (byte) read;
+					tempIndex++;
+					bytesLeft--;
 				}
-			} while (bytesRead >= 0);
-		} catch (IOException e) {
-			System.out.println(e);
-			e.printStackTrace();
+			} catch (IOException e) {
+				System.out.println("error in readint method client side" + e);
+				e.printStackTrace();
+			}
 		}
+		return temp;
+	}
+
+	private synchronized int readInt(int serverIndex) {
+		System.out.println("Reading header ints client side");
+		byte[] temp = new byte[4];
+		int bytesLeft = 4;
+		int tempIndex = 0;
+		while (bytesLeft > 0) {
+			// läs en byte
+			int read;
+			try {
+				read = inputStream[serverIndex].read();
+				if (read != -1) {
+					// lägg i temp
+					temp[tempIndex] = (byte) read;
+					tempIndex++;
+					bytesLeft--;
+				}
+			} catch (IOException e) {
+				System.out.println("error in readint method client side" + e);
+				e.printStackTrace();
+			}
+		}
+
 		// Konvertera till int
-		ByteBuffer bb = ByteBuffer.wrap(byteToInt);
-		return bb.getInt();
+		ByteBuffer bb = ByteBuffer.wrap(temp);
+		return bb.getInt(0);
 	}
 
 }

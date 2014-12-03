@@ -18,6 +18,7 @@ public class ClientReader extends Thread {
 	}
 
 	public void run() {
+		System.out.println("ClientReader for "+serverIndex+", is operating");
 		while (!isInterrupted()) {
 			try {
 				monitor.listenToServer(serverIndex);

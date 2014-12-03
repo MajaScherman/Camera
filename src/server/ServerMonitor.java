@@ -6,9 +6,10 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
-import client.ClientMonitor;
 import se.lth.cs.eda040.fakecamera.AxisM3006V; // Provides AxisM3006V
+import client.ClientMonitor;
 
 public class ServerMonitor {
 	/**
@@ -102,25 +103,30 @@ public class ServerMonitor {
 
 	public synchronized void readAndRunCommand() {
 		byte[] message = new byte[MESSAGE_SIZE];
-		try {//Read the request
-			int bytesRead = 0;
-			int bytesLeft = MESSAGE_SIZE;
-			int status;
-			do {
-				status = is.read(message, bytesRead, bytesLeft);
-				// The 'status' variable now holds the no. of bytes read,
-				// or -1 if no more data is available
-				if (status > 0) {
-					bytesRead += status;
-					bytesLeft -= status;
+		int bytesLeft = MESSAGE_SIZE;
+		int tempIndex = 0;
+		while(bytesLeft > 0){
+			//läs en byte
+			int read;
+			try {
+				read = is.read();
+				//lägg i message
+				if(read != -1){
+				message[tempIndex] = (byte) read;
+				tempIndex++;
+				bytesLeft--;
 				}
-			} while (bytesRead >= 0);
-		} catch (IOException e) {
-			e.printStackTrace();
-
+			} catch (IOException e) {
+				System.out.println("error in readandruncommand method server side" + e);
+				e.printStackTrace();
+			}
 		}
+		
+		// Konvertera till int
 		ByteBuffer bb = ByteBuffer.wrap(message);
-		int command = bb.getInt();
+		System.out.println("Last header int was: " + bb.getInt(0));
+		int command = bb.getInt(0);
+		System.out.println("Command was: " + command);
 		runCommand(command);
 		notifyAll();
 	}
@@ -163,7 +169,8 @@ public class ServerMonitor {
 				message = getImage();
 				if (message != null) {
 					System.out.println("message is an image and not null in movie mode");
-					os.write(message, 0, BUFFER_LENGTH);
+					os.write(message, 0, message.length);
+					os.flush();
 					System.out.println("printed image to output stream in movie mode");
 					lastTimeSentImg = System.currentTimeMillis();
 				} else {
@@ -176,10 +183,13 @@ public class ServerMonitor {
 					message = getImage();
 					if (message != null) {
 						System.out.println("image not null in idle mode");
-						os.write(message, 0, BUFFER_LENGTH);
+						os.write(message, 0, message.length);
+						os.flush();
 						System.out
 								.println("printed image to output stream in idle mode...");
 						lastTimeSentImg = System.currentTimeMillis();
+					}else{
+						System.out.println("Null was returned  in idle mode server side");
 					}
 				} else {
 					long t = lastTimeSentImg + 5000;
@@ -191,7 +201,8 @@ public class ServerMonitor {
 						message = getImage();
 						if (message != null) {
 							System.out.println("image was not null lol");
-							os.write(message,0,BUFFER_LENGTH);
+							os.write(message,0,message.length);
+							os.flush();
 							System.out
 									.println("printed message to outputstream in idle mode");
 							lastTimeSentImg = System.currentTimeMillis();
@@ -221,9 +232,10 @@ public class ServerMonitor {
 		System.out.println("Längden på JPEG serversida: " + length);
 		if (length != 0) {
 			camera.getTime(imageTime, 0); // second param is offset
-			System.out.println("Cameratid serversida: " + imageTime);
+			System.out.println("Cameratid serversida: " + Arrays.toString(imageTime));
 			byte[] message = packageData(ClientMonitor.IMAGE, length,
 					cameraNbr, imageTime, image);
+			System.out.println("packagedata färdig serversida: ");
 			return message;
 		}
 		return null;
@@ -255,7 +267,13 @@ public class ServerMonitor {
 		bb.putInt(cameraNbr);// 4 bytes for every int
 		bb.put(time);
 		bb.put(data);// image or command
-		byte[] message = bb.array();
+		byte[] message = null;
+		if(bb.hasArray()){
+		message = bb.array();
+		}else{
+			System.out.println("byte buffer does not have an array in package data server side ja");
+		}
+		System.out.println("slutet av packagedata serversida: ");
 		return message;
 
 	}
@@ -275,6 +293,7 @@ public class ServerMonitor {
 			bb.putInt(ClientMonitor.COMMAND);
 			bb.putInt(ClientMonitor.MOVIE_MODE);
 			os.write(bb.array(),0,8);
+			os.flush();
 			notifyAll();
 		}
 

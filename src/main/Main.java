@@ -11,6 +11,7 @@ import client.ClientMonitor;
 import client.ClientReader;
 import client.ClientWriter;
 import client.SocketAddress;
+import client.Updater;
 
 public class Main {
 	public static void main(String[] args) {
@@ -54,8 +55,15 @@ public class Main {
 		/**
 		 * Start up the GUI
 		 */
-
+		
 		GUI gui = new GUI(clientMon);
+
+		/**
+		 * Start up the updater
+		 */
+		Updater updater = new Updater(clientMon,gui);
+		updater.start();
+		
 
 
 	}

@@ -11,6 +11,7 @@ public class ClientWriter extends Thread {
 	}
 
 	public void run() {
+		System.out.println("ClientWriter operating");
 		while (!isInterrupted()) {
 			try {
 				mon.sendMessageToServer();
