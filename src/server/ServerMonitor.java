@@ -105,21 +105,23 @@ public class ServerMonitor {
 		byte[] message = new byte[MESSAGE_SIZE];
 		int bytesLeft = MESSAGE_SIZE;
 		int tempIndex = 0;
-		while(bytesLeft > 0){
-			//läs en byte
+		while (bytesLeft > 0) {
+			// läs en byte
 			int read;
 			try {
 				read = is.read();
-				//lägg i message
+				// lägg i message
 				message[tempIndex] = (byte) read;
 				tempIndex++;
 				bytesLeft--;
 			} catch (IOException e) {
-				System.out.println("error in readandruncommand method server side" + e);
+				System.out
+						.println("error in readandruncommand method server side"
+								+ e);
 				e.printStackTrace();
 			}
 		}
-		
+
 		// Konvertera till int
 		ByteBuffer bb = ByteBuffer.wrap(message);
 		System.out.println("Last header serverside int was: " + bb.getInt(0));
@@ -157,6 +159,7 @@ public class ServerMonitor {
 	 * the client is informed.
 	 */
 	public synchronized void write() {
+		//TODO Refactor this method
 		try {
 			while (!isConnected) {
 				wait();
@@ -166,10 +169,11 @@ public class ServerMonitor {
 			if (movieMode) {
 				message = getImage();
 				if (message != null) {
-					System.out.println("message is an image and not null in movie mode");
+					System.out
+							.println("message is an image and not null in movie mode");
 					os.write(message, 0, message.length);
-					os.flush();
-					System.out.println("printed image to output stream in movie mode");
+					System.out
+							.println("printed image to output stream in movie mode");
 					lastTimeSentImg = System.currentTimeMillis();
 				} else {
 					System.out.println("could not fetch an image");
@@ -182,12 +186,12 @@ public class ServerMonitor {
 					if (message != null) {
 						System.out.println("image not null in idle mode");
 						os.write(message, 0, message.length);
-						os.flush();
 						System.out
 								.println("printed image to output stream in idle mode...");
 						lastTimeSentImg = System.currentTimeMillis();
-					}else{
-						System.out.println("Null was returned  in idle mode server side");
+					} else {
+						System.out
+								.println("Null was returned  in idle mode server side");
 					}
 				} else {
 					long t = lastTimeSentImg + 5000;
@@ -199,8 +203,7 @@ public class ServerMonitor {
 						message = getImage();
 						if (message != null) {
 							System.out.println("image was not null lol");
-							os.write(message,0,message.length);
-							os.flush();
+							os.write(message, 0, message.length);
 							System.out
 									.println("printed message to outputstream in idle mode");
 							lastTimeSentImg = System.currentTimeMillis();
@@ -230,7 +233,8 @@ public class ServerMonitor {
 		System.out.println("Längden på JPEG serversida: " + length);
 		if (length != 0) {
 			camera.getTime(imageTime, 0); // second param is offset
-			System.out.println("Cameratid serversida: " + Arrays.toString(imageTime));
+			System.out.println("Cameratid serversida: "
+					+ Arrays.toString(imageTime));
 			byte[] message = packageData(ClientMonitor.IMAGE, length,
 					cameraNbr, imageTime, image);
 			System.out.println("packagedata färdig serversida: ");
@@ -246,30 +250,32 @@ public class ServerMonitor {
 	 * @param type
 	 *            , Tells the client what the package contains, 0 = image 1=
 	 *            command
-	 * @param size
+	 * @param length
 	 *            , size of image.
 	 * @param cameraNbr
 	 *            , Tells from which camera the package is sent.
 	 * @param time
 	 *            , At which time the image was taken.
-	 * @param data
+	 * @param image
 	 * 
 	 * @return
 	 */
-	private synchronized byte[] packageData(int type, int size, int cameraNbr,
-			byte[] time, byte[] data) {
+	private synchronized byte[] packageData(int type, int length,
+			int cameraNbr, byte[] time, byte[] image) {
 		System.out.println("vi packeterar datan här serversida");
-		ByteBuffer bb = ByteBuffer.allocate(12+AxisM3006V.TIME_ARRAY_SIZE+size);
+		ByteBuffer bb = ByteBuffer.allocate(12 + AxisM3006V.TIME_ARRAY_SIZE
+				+ length);
 		bb.putInt(type);
-		bb.putInt(size);
+		bb.putInt(length);
 		bb.putInt(cameraNbr);// 4 bytes for every int
 		bb.put(time);
-		bb.put(data,0,size);// image or command
+		bb.put(image, 0, length);// image or command
 		byte[] message = null;
-		if(bb.hasArray()){
-		message = bb.array();
-		}else{
-			System.out.println("byte buffer does not have an array in package data server side ja");
+		if (bb.hasArray()) {
+			message = bb.array();
+		} else {
+			System.out
+					.println("byte buffer does not have an array in package data server side ja");
 		}
 		System.out.println("slutet av packagedata serversida: ");
 		return message;
@@ -287,14 +293,14 @@ public class ServerMonitor {
 	private synchronized void motionDetection() throws IOException {
 		System.out.println("Checking motions");
 		if (camera.motionDetected()) {
-			if(!movieMode){
-			movieMode = true;
-			ByteBuffer bb = ByteBuffer.allocate(8);
-			bb.putInt(ClientMonitor.COMMAND);
-			bb.putInt(ClientMonitor.MOVIE_MODE);
-			os.write(bb.array(),0,8);
-			os.flush();
-			notifyAll();
+			if (!movieMode) {
+				movieMode = true;
+				ByteBuffer bb = ByteBuffer.allocate(8);
+				bb.putInt(ClientMonitor.COMMAND);
+				bb.putInt(ClientMonitor.MOVIE_MODE);
+				os.write(bb.array(), 0, 8);
+				os.flush();
+				notifyAll();
 			}
 		}
 

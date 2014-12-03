@@ -18,6 +18,7 @@ public class ButtonHandler implements ActionListener {
 	}
 
 	public void actionPerformed(ActionEvent evt) {
+		//TODO HOgga inte GUI!!! KOLLA DEADLOCKS
 		String actionCommand = ((JButton) evt.getSource()).getActionCommand();
 		try {
 			switch (actionCommand) {

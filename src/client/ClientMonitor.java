@@ -396,9 +396,10 @@ public class ClientMonitor {
 		while (bytesLeft > 0) {
 			// läs en byte
 			int read;
-			try {
+			try {	
 				read = inputStream[serverIndex].read();
 				// lägg i byteToInt
+				//TODO Kolla read fallet -1
 					temp[tempIndex] = (byte) read;
 					tempIndex++;
 					bytesLeft--;
