@@ -1,5 +1,7 @@
 package server;
 
+import java.net.SocketException;
+
 
 public class ServerReader extends Thread {
 
@@ -14,7 +16,13 @@ public class ServerReader extends Thread {
 		while (!isInterrupted()) {
 			mon.establishConnection();
 			while (mon.isConnected()) {
-				mon.readAndRunCommand();
+				try {
+					mon.readAndRunCommand();
+				} catch (SocketException e) {
+					System.out.println(e + "catched the exception that we closed the connection");
+					mon.establishConnection();
+					
+				}
 				
 			}
 		}

@@ -139,11 +139,20 @@ public class ClientMonitor {
 			serverIndex = 1;
 		}
 		newCommand[serverIndex] = false;
-		notifyAll();
+		// notifyAll();
 		switch (writerCommand[serverIndex]) {
 		case CLOSE_CONNECTION:
 			if (isConnected[serverIndex]) {
-				outputStream[serverIndex].write(writerCommand[serverIndex]);
+				byte[] bytes = ByteBuffer.allocate(4)
+						.putInt(writerCommand[serverIndex],0).array();
+				// TODO controllera
+				// att
+				// byte
+				// arrays
+				// används
+				// rätt
+				// överallt
+				outputStream[serverIndex].write(bytes);
 				outputStream[serverIndex].flush();
 				disconnectToServer(serverIndex);
 			}
@@ -156,7 +165,9 @@ public class ClientMonitor {
 		case MOVIE_MODE:
 			for (int i = 0; i < nbrOfSockets; i++) {
 				if (isConnected[i]) {
-					outputStream[i].write(writerCommand[serverIndex]);
+					byte[] bytes = ByteBuffer.allocate(4)
+							.putInt(writerCommand[serverIndex],0).array();
+					outputStream[i].write(bytes);
 					outputStream[serverIndex].flush();
 				}
 			}
@@ -166,7 +177,9 @@ public class ClientMonitor {
 		case IDLE_MODE:
 			for (int i = 0; i < nbrOfSockets; i++) {
 				if (isConnected[i]) {
-					outputStream[i].write(writerCommand[serverIndex]);
+					byte[] bytes = ByteBuffer.allocate(4)
+							.putInt(writerCommand[serverIndex],0).array();
+					outputStream[i].write(bytes);
 					outputStream[serverIndex].flush();
 				}
 			}
@@ -183,13 +196,14 @@ public class ClientMonitor {
 			wait();
 		}
 		if (inputStream[serverIndex].available() > 0) {
-			System.out.println("trueie****************************************************************");
+			System.out
+					.println("trueie****************************************************************");
 			somethingOnStream[serverIndex] = true;
-			//notifyAll();
+			// notifyAll();
 		} else {
-			//System.out.println("falsie");
+			// System.out.println("falsie");
 			somethingOnStream[serverIndex] = false;
-			//notifyAll();
+			// notifyAll();
 		}
 	}
 
@@ -206,7 +220,7 @@ public class ClientMonitor {
 				while (!isConnected[serverIndex]) {// || !finishedUpdating
 					wait();
 				}
-				//System.out.println("read header client side");
+				// System.out.println("read header client side");
 				// Read header - read is blocking
 				if (somethingOnStream[serverIndex]) {
 					System.out.println("frogie");
@@ -219,22 +233,21 @@ public class ClientMonitor {
 						int cameraNumber = readInt(serverIndex);
 						System.out.println("Camera number client side is "
 								+ cameraNumber);
-						
-						byte [] temp = readByteArray(serverIndex, 8);
+
+						byte[] temp = readByteArray(serverIndex, 8);
 						ByteBuffer bb = ByteBuffer.wrap(temp);
 						long timeStamp = bb.getLong();
 
 						System.out.println("Timestamp client side is "
 								+ timeStamp);
-						
-						long delay = System.currentTimeMillis()-timeStamp;
-						
-						System.out.println("Delay client side is "
-								+ delay);
-						
+
+						long delay = System.currentTimeMillis() - timeStamp;
+
+						System.out.println("Delay client side is " + delay);
+
 						Image image = new Image(cameraNumber, timeStamp, delay,
 								readByteArray(serverIndex, size));
-						
+
 						newImage = true;
 						updateGUI = true;
 						finishedUpdating = false;
@@ -256,8 +269,8 @@ public class ClientMonitor {
 					} else {
 						throw new Exception("You got a non existing type :D");
 					}
-				}else{
-					
+				} else {
+
 				}
 				// TODO verifiera att paket är korrekt
 			} catch (IOException e) {
@@ -308,7 +321,8 @@ public class ClientMonitor {
 		if (!(serverIndex >= 0 && serverIndex < socket.length)) {
 			// TODO Throw exception
 			System.out.println("The server index is out of range, "
-					+ "please give a value between 0 and " + socket.length);
+					+ "please give a value between 0 and " + socket.length
+					+ (-1));
 		} else if (isConnected[serverIndex]) {
 			System.out.println("The server is already connected");
 		} else {
@@ -344,7 +358,7 @@ public class ClientMonitor {
 	 *            the index of the server one wants to disconnect to
 	 */
 	public synchronized void disconnectToServer(int serverIndex) {
-		if (!(serverIndex > 0 && serverIndex < socket.length)) {
+		if (!(serverIndex >= 0 && serverIndex < socket.length)) {
 			// TODO Throw exception
 			System.out.println("The server index is out of range, "
 					+ "please give a value between 0 and " + socket.length);

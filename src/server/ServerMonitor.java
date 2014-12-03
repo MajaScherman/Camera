@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -83,24 +84,26 @@ public class ServerMonitor {
 				} 
 				System.out.println("The server connected to the client socket");
 				notifyAll();
-			} catch (Exception e) {
+			} catch (IOException e) {
 				System.out.println("Could not establish connection" + e);
 			}
 		}
 	}
 
-	public synchronized void closeConnection() {
+	public synchronized void closeConnection() throws SocketException {
 		if (!isConnected) {
 			System.out.println("Connection is already closed");
 		} else {
 			try {
-				clientSocket.close();
-				serverSocket.close();
 				isConnected = false;
 				notifyAll();
+				clientSocket.close();
+				//serverSocket.close();
+				System.out.println("soon to send our SPACESHIP");
+			throw new SocketException("The connection is closed");
 			} catch (IOException e) {
-				System.out.println("Could not close connection");
-				e.printStackTrace();
+				System.out.println("SPACESHIP");
+				throw new SocketException("the connection is closed and IOException: " + e);
 			}
 		}
 	}
@@ -111,7 +114,7 @@ public class ServerMonitor {
 	 * bytes.
 	 */
 
-	public synchronized void readAndRunCommand() {
+	public synchronized void readAndRunCommand() throws SocketException{
 		byte[] message = new byte[MESSAGE_SIZE];
 		int bytesLeft = MESSAGE_SIZE;
 		int tempIndex = 0;
@@ -144,7 +147,7 @@ public class ServerMonitor {
 	/**
 	 * Interprets the command and performs the correct actions.
 	 */
-	private synchronized void runCommand(int command) {
+	private synchronized void runCommand(int command) throws SocketException {
 		switch (command) {
 		case ClientMonitor.CLOSE_CONNECTION:
 			closeConnection();
@@ -177,13 +180,14 @@ public class ServerMonitor {
 				motionIsDetected();
 			}
 			byte[] message;
+			
 			if (movieMode) {
 				message = getImage();
 				System.out.println("got an image");
 				if (message != null) {
 					System.out
 							.println("message is an image and not null in movie mode");
-					os.write(message, 0, message.length);
+					os.write(message, 0, message.length);//TODO gives an error if disconnected with wrong timing socket write error
 					os.flush();
 					System.out
 							.println("printed image to output stream in movie mode");
@@ -215,9 +219,13 @@ public class ServerMonitor {
 				}
 
 			}
-		} catch (Exception e) {
+		} catch (SocketException e) {
+			System.out.println(e + " socket exception");
+			establishConnection();
+		}catch(Exception e){
 			System.out.println("Write failed");
 			e.printStackTrace();
+			
 		}
 		//notifyAll();
 	}
@@ -323,4 +331,5 @@ public class ServerMonitor {
 		notifyAll();
 	}
 
+	
 }
