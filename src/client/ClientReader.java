@@ -1,7 +1,7 @@
 package client;
 
 public class ClientReader extends Thread {
-	private ClientMonitor monitor;
+	private ClientMonitor mon;
 	private int serverIndex;
 
 	/**
@@ -13,15 +13,18 @@ public class ClientReader extends Thread {
 	 *            the number of the server that the reader handles
 	 */
 	public ClientReader(ClientMonitor m, int serverNbr) {
-		monitor = m;
+		mon = m;
 		serverIndex = serverNbr;
 	}
 
 	public void run() {
-		System.out.println("ClientReader for "+serverIndex+", is operating");
+		System.out
+				.println("ClientReader for " + serverIndex + ", is operating");
 		while (!isInterrupted()) {
 			try {
-				monitor.listenToServer(serverIndex);
+				
+				mon.somethingOnStream(serverIndex);
+				mon.listenToServer(serverIndex);
 			} catch (Exception e) {
 				System.out.println("Listentoserver in monitor is mean :(" + e);
 				e.printStackTrace();

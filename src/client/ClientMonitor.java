@@ -77,6 +77,11 @@ public class ClientMonitor {
 	private int[] writerCommand;
 	private boolean[] newCommand;
 
+	/**
+	 * attributes for reader, connection //TODO
+	 */
+	private boolean[] somethingOnStream;
+
 	public static final int IMAGE_SIZE = 640 * 480 * 3; // REQ 7
 	public static final int IMAGE_BUFFER_SIZE = 125; // Supports 125 images,
 														// which is 5 seconds of
@@ -97,6 +102,7 @@ public class ClientMonitor {
 		isConnected = new boolean[nbrOfSockets];
 		inputStream = new InputStream[nbrOfSockets];
 		outputStream = new OutputStream[nbrOfSockets];
+		somethingOnStream = new boolean[nbrOfSockets];
 		this.nbrOfSockets = nbrOfSockets;
 		imageBuffer = new Image[IMAGE_BUFFER_SIZE];
 		commandBuffer = new int[COMMAND_BUFFER_SIZE];
@@ -170,6 +176,23 @@ public class ClientMonitor {
 		notifyAll();
 	}
 
+	public synchronized void somethingOnStream(int serverIndex)
+			throws IOException, InterruptedException {
+		// TODO controll that this is corectly implemented
+		while (!isConnected[serverIndex]) {
+			wait();
+		}
+		if (inputStream[serverIndex].available() > 0) {
+			System.out.println("trueie****************************************************************");
+			somethingOnStream[serverIndex] = true;
+			//notifyAll();
+		} else {
+			//System.out.println("falsie");
+			somethingOnStream[serverIndex] = false;
+			//notifyAll();
+		}
+	}
+
 	/**
 	 * This method receives messages from the server.
 	 * 
@@ -180,46 +203,52 @@ public class ClientMonitor {
 	public synchronized void listenToServer(int serverIndex) throws Exception {
 		if (serverIndex >= 0 && serverIndex < nbrOfSockets) {
 			try {
-				while (!isConnected[serverIndex] || !finishedUpdating) {
+				while (!isConnected[serverIndex]) {// || !finishedUpdating
 					wait();
 				}
-				System.out.println("read header client side");
+				//System.out.println("read header client side");
 				// Read header - read is blocking
-				int type = readInt(serverIndex);
-				System.out.println("Type is " + type);
-				if (type == IMAGE) {
-					int size = readInt(serverIndex);
-					System.out.println("Package size client side JPEG" + size);
-					int cameraNumber = readInt(serverIndex);
-					System.out.println("Camera number client side is "
-							+ cameraNumber);
-					byte[] timeStamp = readByteArray(serverIndex, 8);
+				if (somethingOnStream[serverIndex]) {
+					System.out.println("frogie");
+					int type = readInt(serverIndex);
+					System.out.println("Type is " + type);
+					if (type == IMAGE) {
+						int size = readInt(serverIndex);
+						System.out.println("Package size client side JPEG"
+								+ size);
+						int cameraNumber = readInt(serverIndex);
+						System.out.println("Camera number client side is "
+								+ cameraNumber);
+						byte[] timeStamp = readByteArray(serverIndex, 8);
 
-					System.out.println("Timestamp client side is "
-							+ Arrays.toString(timeStamp));
+						System.out.println("Timestamp client side is "
+								+ Arrays.toString(timeStamp));
 
-					Image image = new Image(cameraNumber, timeStamp,
-							readByteArray(serverIndex, size));
-					newImage = true;
-					updateGUI = true;
-					finishedUpdating = false;
-					putImageToBuffer(image);// data contains the image
-					notifyAll();
-				} else if (type == COMMAND) {
-					int commandData = readInt(serverIndex);
-					System.out.println("command data client side is"
-							+ commandData);
-					if (commandData != MOVIE_MODE) {
-						throw new Exception(
-								"Client have recieved an invalid command");
+						Image image = new Image(cameraNumber, timeStamp,
+								readByteArray(serverIndex, size));
+						newImage = true;
+						updateGUI = true;
+						finishedUpdating = false;
+						putImageToBuffer(image);// data contains the image
+						notifyAll();
+					} else if (type == COMMAND) {
+						int commandData = readInt(serverIndex);
+						System.out.println("command data client side is"
+								+ commandData);
+						if (commandData != MOVIE_MODE) {
+							throw new Exception(
+									"Client have recieved an invalid command");
 
+						}
+						newMode = true;
+						updateGUI = true;
+						putCommandToBuffer(commandData);
+						notifyAll();
+					} else {
+						throw new Exception("You got a non existing type :D");
 					}
-					newMode = true;
-					updateGUI = true;
-					putCommandToBuffer(commandData);
-					notifyAll();
-				} else {
-					throw new Exception("You got a non existing type :D");
+				}else{
+					
 				}
 				// TODO verifiera att paket är korrekt
 			} catch (IOException e) {
@@ -338,7 +367,7 @@ public class ClientMonitor {
 	}
 
 	public synchronized int getCommandFromBuffer() {
-		while (nbrOfCommandsInBuffer < 0) {
+		while (nbrOfCommandsInBuffer <= 0) {
 			try {
 				wait();
 			} catch (InterruptedException e) {
@@ -369,7 +398,7 @@ public class ClientMonitor {
 	}
 
 	public synchronized Image getImageFromBuffer() {
-		while (nbrOfImgsInBuffer < 0) {
+		while (nbrOfImgsInBuffer <= 0) {
 			try {
 				wait();
 			} catch (InterruptedException e) {
@@ -396,13 +425,13 @@ public class ClientMonitor {
 		while (bytesLeft > 0) {
 			// läs en byte
 			int read;
-			try {	
+			try {
 				read = inputStream[serverIndex].read();
 				// lägg i byteToInt
-				//TODO Kolla read fallet -1
-					temp[tempIndex] = (byte) read;
-					tempIndex++;
-					bytesLeft--;
+				// TODO Kolla read fallet -1
+				temp[tempIndex] = (byte) read;
+				tempIndex++;
+				bytesLeft--;
 			} catch (IOException e) {
 				System.out.println("error in readint method client side" + e);
 				e.printStackTrace();
@@ -414,23 +443,21 @@ public class ClientMonitor {
 	private synchronized int readInt(int serverIndex) {
 		System.out.println("Reading ints");
 		byte[] temp = new byte[4];
-		int bytesLeft = 4;
-		int tempIndex = 0;
-		while (bytesLeft > 0) {
-			// läs en byte
-			int read;
-			try {
-				read = inputStream[serverIndex].read();
-					// lägg i temp
-					temp[tempIndex] = (byte) read;
-					tempIndex++;
-					bytesLeft--;
-			} catch (IOException e) {
-				System.out.println("error in readint method client side" + e);
-				e.printStackTrace();
-			}
-		}
 
+		// läs en byte
+		int k = 0;
+		try {
+			System.out.println("groda");
+			k = inputStream[serverIndex].read(temp, 0, 4);
+
+		} catch (IOException e) {
+			System.out.println("error in readint method client side" + e);
+			e.printStackTrace();
+		}
+		System.out.println("hej");
+		if (k == 4) {
+			System.out.println("4 byte lästes in till temp");
+		}
 		// Konvertera till int
 		ByteBuffer bb = ByteBuffer.wrap(temp);
 		return bb.getInt(0);

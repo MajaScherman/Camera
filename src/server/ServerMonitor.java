@@ -31,6 +31,7 @@ public class ServerMonitor {
 	 * Attributes for commands
 	 */
 	private boolean movieMode;
+	private boolean motionDetected;
 	private long lastTimeSentImg;
 
 	// Hopefully its ok to add 3*4 for the type, cameraNbr, and size.
@@ -44,7 +45,7 @@ public class ServerMonitor {
 		this.camera = camera;
 		camera.init();
 		camera.setProxy(hostAddress, port);
-		movieMode = false;
+		movieMode = isConnected = motionDetected = false;
 		lastTimeSentImg = System.currentTimeMillis();
 		try {
 			serverSocket = new ServerSocket(port);
@@ -73,6 +74,14 @@ public class ServerMonitor {
 				is = clientSocket.getInputStream();
 				os = clientSocket.getOutputStream();
 				isConnected = true;
+				byte[] message = getImage();
+				if (message != null) {
+					os.write(message, 0, message.length);
+					os.flush();
+					lastTimeSentImg = System.currentTimeMillis();
+					System.out.println("hej whatever");
+				} 
+				System.out.println("The server connected to the client socket");
 				notifyAll();
 			} catch (Exception e) {
 				System.out.println("Could not establish connection" + e);
@@ -164,20 +173,23 @@ public class ServerMonitor {
 			while (!isConnected) {
 				wait();
 			}
-
-			motionDetection();
+			if (motionDetected) {
+				motionIsDetected();
+			}
 			byte[] message;
 			if (movieMode) {
 				message = getImage();
+				System.out.println("got an image");
 				if (message != null) {
 					System.out
 							.println("message is an image and not null in movie mode");
 					os.write(message, 0, message.length);
+					os.flush();
 					System.out
 							.println("printed image to output stream in movie mode");
 					lastTimeSentImg = System.currentTimeMillis();
-					notifyAll();
-					System.out.println("time for snding image:"
+
+					System.out.println("time for sending image:"
 							+ lastTimeSentImg);
 				} else {
 					System.out.println("could not fetch an image");
@@ -185,28 +197,29 @@ public class ServerMonitor {
 			} else {
 				long timeUntilAllowed = lastTimeSentImg + 5000;
 				long diff = timeUntilAllowed - System.currentTimeMillis();
-				while (diff >= 0) {
-
-					Thread.sleep(diff);
+				while (!motionDetected && diff >= 0) {
+					System.out.println("waiting diff sek" + diff);
+					wait(diff);
 					diff = timeUntilAllowed - System.currentTimeMillis();
 
 				}
 				message = getImage();
 				if (message != null) {
 					os.write(message, 0, message.length);
+					os.flush();
 					lastTimeSentImg = System.currentTimeMillis();
-					notifyAll();
-				}else{
-					System.out.println("write in server failed, message was null in idle mode");
+
+				} else {
+					System.out
+							.println("write in server failed, message was null in idle mode");
 				}
-				
 
 			}
 		} catch (Exception e) {
 			System.out.println("Write failed");
 			e.printStackTrace();
 		}
-		notifyAll();
+		//notifyAll();
 	}
 
 	/**
@@ -272,27 +285,42 @@ public class ServerMonitor {
 
 	}
 
+	public synchronized void motionDetection() {
+		System.out.println("do we detect a motion???");
+		while (!isConnected) {
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+		}
+		if (camera.motionDetected()) {
+			System.out.println("detected motion");
+			motionDetected = true;
+			notifyAll();
+		}
+	}
+
 	/**
 	 * Checks if there was any motion detected and if so, then informs the
 	 * client.
 	 * 
 	 * @throws IOException
-	 *             , if the command informing the client of the detected motion
-	 *             was not sent.
 	 */
-	private synchronized void motionDetection() throws IOException {
-		System.out.println("Checking motions");
-		if (camera.motionDetected()) {
-			if (!movieMode) {
-				movieMode = true;
-				ByteBuffer bb = ByteBuffer.allocate(8);
-				bb.putInt(ClientMonitor.COMMAND);
-				bb.putInt(ClientMonitor.MOVIE_MODE);
-				os.write(bb.array(), 0, 8);
-				notifyAll();
-			}
+	private synchronized void motionIsDetected() throws IOException {
+		System.out.println("motion is detected");
+		if (!movieMode) {
+			movieMode = true;
+			ByteBuffer bb = ByteBuffer.allocate(8);
+			bb.putInt(ClientMonitor.COMMAND);
+			bb.putInt(ClientMonitor.MOVIE_MODE);
+			os.write(bb.array(), 0, 8);
+			os.flush();
 		}
-
+		motionDetected = false;
+		notifyAll();
 	}
 
 }
