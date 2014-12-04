@@ -32,4 +32,8 @@ public class Image {
 		}
 		
 	}
+
+	public long getDelay() {
+		return delay;
+	}
 }

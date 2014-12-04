@@ -70,10 +70,11 @@ public class GUI extends JFrame {
 		switch (image.getCameraNbr()) {
 		case 0:
 			imageViewer0.refresh(image.getImage());
-			
+			infoPanel.setLabelText(0, Long.toString(image.getDelay()));
 			break;
 		case 1:
 			imageViewer1.refresh(image.getImage());
+			infoPanel.setLabelText(1, Long.toString(image.getDelay()));
 			break;
 		}
 
@@ -82,14 +83,14 @@ public class GUI extends JFrame {
 	public void sendCommandToInfoPanel(int command) {
 		switch (command) {
 		case ClientMonitor.MOVIE_MODE:		
-			infoPanel.setLabelText(2, "Movie Mode");
+			infoPanel.setLabelText(3, "Movie Mode");
 			buttonPanel.setButtonText(1, "IDLE MODE");
 			break;
 		case ClientMonitor.ASYNCHRONIZED:
-			infoPanel.setLabelText(1, "Asynchronized Mode");
+			infoPanel.setLabelText(2, "Asynchronized Mode");
 			break;
 		case ClientMonitor.SYNCHRONIZED:
-			infoPanel.setLabelText(1, "Synchronized Mode");
+			infoPanel.setLabelText(2, "Synchronized Mode");
 			break;
 		default:
 			break;

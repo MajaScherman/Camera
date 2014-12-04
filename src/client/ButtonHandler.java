@@ -36,7 +36,7 @@ public class ButtonHandler implements ActionListener {
 				JButton temp1 = (JButton) evt.getSource();
 				temp1.setText("MOVIE MODE");
 				temp1.setActionCommand("MOVIE");										
-				infoPanel.setLabelText(2, "Idle Mode");
+				infoPanel.setLabelText(3, "Idle Mode");
 				break;
 			case "MOVIE":
 				mon.putCommandToClientWriter(0, ClientMonitor.MOVIE_MODE);
@@ -44,7 +44,7 @@ public class ButtonHandler implements ActionListener {
 				JButton temp2 = (JButton) evt.getSource();
 				temp2.setText("IDLE MODE");
 				temp2.setActionCommand("IDLE");		
-				infoPanel.setLabelText(2, "Movie Mode");
+				infoPanel.setLabelText(3, "Movie Mode");
 				break;
 			case "CLOSE CONNECTION 1":
 				JButton temp3 = (JButton) evt.getSource();
@@ -75,13 +75,13 @@ public class ButtonHandler implements ActionListener {
 				JButton temp7 = (JButton) evt.getSource();
 				temp7.setText("ASYNCHRONIZED MODE");
 				temp7.setActionCommand("ASYNCHRONIZED");
-				infoPanel.setLabelText(1, "Synchronized");
+				infoPanel.setLabelText(2, "Synchronized");
 				break;
 			case "ASYNCHRONIZED":
 				JButton temp8 = (JButton) evt.getSource();
 				temp8.setText("SYNCHRONIZED MODE");
 				temp8.setActionCommand("SYNCHRONIZED");	
-				infoPanel.setLabelText(1, "Asynchronized");
+				infoPanel.setLabelText(2, "Asynchronized");
 				break;
 			default:
 				System.out
