@@ -40,5 +40,22 @@ public class ButtonPanel extends JPanel {
 		add(sync);
 
 	}
+	
+	public void setButtonText(int buttonIndex, String text) {
+		if (buttonIndex < 0 && buttonIndex > 3) {
+			System.out.println("The button index is too high or too low.");
+		}
+
+		switch (buttonIndex) {
+		
+		case 1:
+			movie.setText(text);
+			movie.setActionCommand("IDLE");
+			break;
+		case 2:
+			sync.setText(text);
+			break;
+		}
+	}
 
 }

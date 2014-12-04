@@ -35,7 +35,7 @@ public class Updater extends Thread {
 				System.out.println("update recognized an command update");
 				int command = mon.getCommandFromUpdaterBuffer();
 				gui.sendCommandToInfoPanel(command);
-
+				
 			}
 		}
 	}
