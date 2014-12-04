@@ -57,7 +57,6 @@ public class ServerReader extends Thread {
 				try {
 					mon.runCommand(bb.getInt(0));
 				} catch (SocketException e) {
-					//e.printStackTrace();
 					try {
 						mon.waitForConnection();
 						is = mon.getInputStream();

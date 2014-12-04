@@ -21,6 +21,7 @@ public class ServerWriter extends Thread {
 	private ServerSocket serverSocket;
 	private InputStream is;
 
+	@SuppressWarnings("static-access")
 	public ServerWriter(ServerMonitor mon, String hostAddress, int port,
 			AxisM3006V camera) {
 		this.mon = mon;

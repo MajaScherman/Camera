@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 
 public class ClientMonitor {
 
@@ -35,7 +34,6 @@ public class ClientMonitor {
 	/**
 	 * Data in packets
 	 */
-	private byte[] data;
 	public static final int CLOSE_CONNECTION = 0;
 	public static final int OPEN_CONNECTION = 1;
 	public static final int MOVIE_MODE = 2;
@@ -56,7 +54,6 @@ public class ClientMonitor {
 	 * Attributes for handling commands in updater
 	 */
 	private CommandBuffer updaterBuffer;
-	private int[][] cameraCommands;
 
 	/**
 	 * Attributes for handling commands in writer
@@ -64,11 +61,6 @@ public class ClientMonitor {
 	private CommandBuffer writerBufferServer1, writerBufferServer2;
 	private boolean server1LastTime; // Is used for fair checking of what server
 										// to write to.
-
-	/**
-	 * attributes for reader, connection //TODO
-	 */
-	private boolean[] somethingOnStream;
 
 	public static final int IMAGE_SIZE = 640 * 480 * 3; // REQ 7
 	public static final int IMAGE_BUFFER_SIZE = 125; // Supports 125 images,
@@ -85,7 +77,6 @@ public class ClientMonitor {
 		isConnected = new boolean[nbrOfSockets];
 		inputStream = new InputStream[nbrOfSockets];
 		outputStream = new OutputStream[nbrOfSockets];
-		somethingOnStream = new boolean[nbrOfSockets];
 
 		writerBufferServer1 = new CommandBuffer(COMMAND_BUFFER_SIZE);
 		writerBufferServer2 = new CommandBuffer(COMMAND_BUFFER_SIZE);
@@ -172,6 +163,14 @@ public class ClientMonitor {
 		}
 	}
 
+	public synchronized void waitForConnection(int serverIndex)
+			throws InterruptedException {
+		while (!isConnected[serverIndex]) {
+			wait();
+		}
+	
+	}
+
 	public synchronized void putCommandToClientWriter(int serverIndex,
 			int command) {
 		if (serverIndex == 0) {
@@ -238,6 +237,11 @@ public class ClientMonitor {
 		return image;
 	}
 
+	public synchronized long SyncMode(Image imageC1, Image imageC2) {
+
+		return 0;
+	}
+
 	/**
 	 * Tells the updater to update the GUI when time is due.
 	 */
@@ -264,35 +268,12 @@ public class ClientMonitor {
 		}
 	}
 
-	public synchronized long SyncMode(Image imageC1, Image imageC2) {
-
-		return 0;
-	}
-
-	public synchronized void waitForConnection(int serverIndex)
-			throws InterruptedException {
-		while (!isConnected[serverIndex]) {
-			wait();
-		}
-
-	}
-
 	public synchronized InputStream getInputStream(int serverIndex) {
 		return inputStream[serverIndex];
 	}
 
 	public synchronized boolean isConnected(int serverIndex) {
 		return isConnected[serverIndex];
-	}
-
-	public synchronized void setNewImage(boolean b) {
-		newImage = b;
-		notifyAll();
-	}
-
-	public synchronized void setUpdateGUI(boolean b) {
-		updateGUI = b;
-		notifyAll();
 	}
 
 	public synchronized int[] waitForWriterInput() throws InterruptedException {
@@ -327,6 +308,16 @@ public class ClientMonitor {
 
 	public synchronized OutputStream[] getOutPutStreams() {
 		return outputStream;
+	}
+
+	public synchronized void setNewImage(boolean b) {
+		newImage = b;
+		notifyAll();
+	}
+
+	public synchronized void setUpdateGUI(boolean b) {
+		updateGUI = b;
+		notifyAll();
 	}
 
 	public synchronized void setNewCommand(boolean b) {
