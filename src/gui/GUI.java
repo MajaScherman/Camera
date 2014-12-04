@@ -88,9 +88,13 @@ public class GUI extends JFrame {
 			break;
 		case ClientMonitor.ASYNCHRONIZED:
 			infoPanel.setLabelText(2, "Asynchronized Mode");
+			buttonPanel.setButtonText(2, "SYNCHRONIZED MODE");
+
 			break;
 		case ClientMonitor.SYNCHRONIZED:
 			infoPanel.setLabelText(2, "Synchronized Mode");
+			buttonPanel.setButtonText(3, "ASYNCHRONIZED");
+
 			break;
 		default:
 			break;

@@ -168,7 +168,7 @@ public class ClientMonitor {
 		while (!isConnected[serverIndex]) {
 			wait();
 		}
-	
+
 	}
 
 	public synchronized void putCommandToClientWriter(int serverIndex,
@@ -183,19 +183,10 @@ public class ClientMonitor {
 
 	public synchronized void putCommandToUpdaterBuffer(int com) {
 		updaterBuffer.putCommandToBuffer(com);
-		notifyAll();
 	}
 
 	public synchronized int getCommandFromUpdaterBuffer() {
-		while (updaterBuffer.getNbrOfCommandsInBuffer() <= 0) {
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
 		int com = updaterBuffer.getCommandFromBuffer();
-		notifyAll();
 		return com;
 	}
 
@@ -254,6 +245,7 @@ public class ClientMonitor {
 			}
 		}
 		updateGUI = false;
+		notifyAll();
 		if (newImage) {
 			newImage = false;
 			notifyAll();
@@ -263,7 +255,6 @@ public class ClientMonitor {
 			notifyAll();
 			return COMMAND;
 		} else {
-			notifyAll();
 			throw new Exception("Check update method is wrong");
 		}
 	}
@@ -323,6 +314,19 @@ public class ClientMonitor {
 	public synchronized void setNewCommand(boolean b) {
 		newMode = b;
 		notifyAll();
+	}
+
+	public synchronized boolean isOnlyOneImage() {
+
+		return !(imageBufferServer1.getNbrOfImagesInBuffer() > 0 && imageBufferServer2
+				.getNbrOfImagesInBuffer() > 0);
+	}
+
+	public synchronized Image[] getImagesFromBuffers() {
+		Image[] images = new Image[2];
+		images[0] = imageBufferServer1.getImageFromBuffer();
+		images[1] = imageBufferServer2.getImageFromBuffer();
+		return images;
 	}
 
 }

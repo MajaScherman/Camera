@@ -54,6 +54,11 @@ public class ButtonPanel extends JPanel {
 			break;
 		case 2:
 			sync.setText(text);
+			sync.setActionCommand("SYNCHRONIZED");
+			break;
+		case 3:
+			sync.setText(text);
+			sync.setActionCommand("ASYNCHRONIZED");
 			break;
 		}
 	}

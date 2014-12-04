@@ -74,12 +74,15 @@ public class ButtonHandler implements ActionListener {
 				temp7.setText("ASYNCHRONIZED MODE");
 				temp7.setActionCommand("ASYNCHRONIZED");
 				infoPanel.setLabelText(2, "Synchronized");
+				mon.putCommandToUpdaterBuffer(ClientMonitor.SYNCHRONIZED);
 				break;
 			case "ASYNCHRONIZED":
 				JButton temp8 = (JButton) evt.getSource();
 				temp8.setText("SYNCHRONIZED MODE");
 				temp8.setActionCommand("SYNCHRONIZED");	
 				infoPanel.setLabelText(2, "Asynchronized");
+				mon.putCommandToUpdaterBuffer(ClientMonitor.ASYNCHRONIZED);
+
 				break;
 			default:
 				System.out
