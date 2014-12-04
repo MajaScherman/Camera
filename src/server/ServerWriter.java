@@ -53,8 +53,8 @@ public class ServerWriter extends Thread {
 					if (camera.motionDetected()) {
 						mon.setMovieMode(true);
 						ByteBuffer bb = ByteBuffer.allocate(8);
-						bb.putInt(ClientMonitor.COMMAND);
-						bb.putInt(ClientMonitor.MOVIE_MODE);
+						bb.putInt(0,ClientMonitor.COMMAND);
+						bb.putInt(4,ClientMonitor.MOVIE_MODE);
 						os.write(bb.array(), 0, 8);
 						os.flush();
 

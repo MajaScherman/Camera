@@ -41,8 +41,7 @@ public class ClientWriter extends Thread {
 					break;
 				case ClientMonitor.MOVIE_MODE:
 					System.out.println("is in movie mode");
-					byte[] bytes1 = ByteBuffer.allocate(4).putInt(command, 0)
-							.array();
+					byte[] bytes1 = ByteBuffer.allocate(4).putInt(0,command).array();
 					for (int i = 0; i < 2; i++) {
 						if (mon.isConnected(i)) {
 							os[i].write(bytes1, 0, 4);
@@ -53,7 +52,7 @@ public class ClientWriter extends Thread {
 
 				case ClientMonitor.IDLE_MODE:
 					System.out.println("is in idle mode");
-					byte[] bytes2 = ByteBuffer.allocate(4).putInt(command, 0)
+					byte[] bytes2 = ByteBuffer.allocate(4).putInt(0,command)
 							.array();
 					for (int i = 0; i < 2; i++) {
 						if (mon.isConnected(i)) {

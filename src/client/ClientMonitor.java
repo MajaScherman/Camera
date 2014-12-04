@@ -196,8 +196,6 @@ public class ClientMonitor {
 			}
 		}
 		int com = updaterBuffer.getCommandFromBuffer();
-		// finishedUpdating = true;
-		System.out.println("finished updating GUI");
 		notifyAll();
 		return com;
 	}
@@ -302,8 +300,6 @@ public class ClientMonitor {
 				&& writerBufferServer2.getNbrOfCommandsInBuffer() <= 0) {
 			wait();
 		}
-		System.out
-				.println("got something in one of the buffers, not sure yet what");
 		int command;
 		int serverIndex;
 		if (server1LastTime) {// If server 1 was checked first last time
