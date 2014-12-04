@@ -24,7 +24,7 @@ public class ImageBuffer {
 
 		public Image getImageFromBuffer() {
 			if (nbrOfImageEntries <= 0) {
-				System.out.println("Failed to get command from writer buffer");
+				System.out.println("Failed to get command from image buffer");
 				return null;
 			} else {
 				Image img = imageBuffer[getIndex];

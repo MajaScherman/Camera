@@ -28,7 +28,6 @@ public class Updater extends Thread {
 				try {
 					gui.setImage(image);
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					System.out.println("failed to set image in GUI" + e);
 					e.printStackTrace();
 				}

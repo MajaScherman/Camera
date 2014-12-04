@@ -53,8 +53,11 @@ public class ClientMonitor {
 	/**
 	 * Attributes for handling images
 	 */
-	private ImageBuffer imageBuffer; // An image ring buffer containing 125 Images
+	private ImageBuffer imageBufferServer1, imageBufferServer2; // An image ring buffer
+																// containing
+																// 125 Images
 
+	private boolean imageS1LastTime;
 	/**
 	 * Attributes for handling commands in updater
 	 */
@@ -93,13 +96,15 @@ public class ClientMonitor {
 		writerBufferServer1 = new CommandBuffer(COMMAND_BUFFER_SIZE);
 		writerBufferServer2 = new CommandBuffer(COMMAND_BUFFER_SIZE);
 		updaterBuffer = new CommandBuffer(COMMAND_BUFFER_SIZE);
-		imageBuffer = new ImageBuffer(IMAGE_BUFFER_SIZE);
+		imageBufferServer1 = new ImageBuffer(IMAGE_BUFFER_SIZE);
+		imageBufferServer2 = new ImageBuffer(IMAGE_BUFFER_SIZE);
 		updateGUI = false;
 		finishedUpdating = true;
 		syncMode = false;
 		movieMode = false;
+		imageS1LastTime = false;
 	}
-	
+
 	/**
 	 * Establishes connection to server
 	 * 
@@ -130,11 +135,11 @@ public class ClientMonitor {
 				outputStream[serverIndex] = socket[serverIndex]
 						.getOutputStream();
 				isConnected[serverIndex] = true;
-				if(serverIndex == 0){
+				if (serverIndex == 0) {
 					writerBufferServer1 = new CommandBuffer(COMMAND_BUFFER_SIZE);
-				}else{
+				} else {
 					writerBufferServer2 = new CommandBuffer(COMMAND_BUFFER_SIZE);
-					
+
 				}
 				notifyAll();
 				System.out.println("Server connection with server "
@@ -175,7 +180,6 @@ public class ClientMonitor {
 		}
 	}
 
-
 	public synchronized void putWriterCommand(int serverIndex, int command) {
 		if (serverIndex == 0) {
 			writerBufferServer1.putCommandToBuffer(command);
@@ -213,7 +217,7 @@ public class ClientMonitor {
 				command = writerBufferServer1.getCommandFromBuffer();
 			}
 		} else {// If server 2 was checked first last time
-
+	
 			if (writerBufferServer1.getNbrOfCommandsInBuffer() > 0) {
 				serverIndex = 0;
 				command = writerBufferServer1.getCommandFromBuffer();
@@ -222,15 +226,13 @@ public class ClientMonitor {
 				command = writerBufferServer2.getCommandFromBuffer();
 			}
 		}
-		System.out.println("Server is: " + serverIndex + "\n Command is: "
-				+ command);
 		switch (command) {
 		case CLOSE_CONNECTION:
 			if (isConnected[serverIndex]) {
 				byte[] bytes = ByteBuffer.allocate(4).putInt(command, 0)
 						.array();
 				// TODO controllera att byte arrays används rätt överallt
-				outputStream[serverIndex].write(bytes,0,4);
+				outputStream[serverIndex].write(bytes, 0, 4);
 				outputStream[serverIndex].flush();
 				disconnectToServer(serverIndex);
 			}
@@ -250,7 +252,7 @@ public class ClientMonitor {
 			}
 			movieMode = true;
 			break;
-
+	
 		case IDLE_MODE:
 			byte[] bytes2 = ByteBuffer.allocate(4).putInt(command, 0).array();
 			for (int i = 0; i < nbrOfSockets; i++) {
@@ -326,9 +328,10 @@ public class ClientMonitor {
 
 						newImage = true;
 						updateGUI = true;
-						finishedUpdating = false;
+//						finishedUpdating = false;
 						System.out.println("Not finished updating GUI");
-						putImageToBuffer(image);// data contains the image
+						putImageToBuffer(image, serverIndex);// data contains
+																// the image
 						notifyAll();
 					} else if (type == COMMAND) {
 						int commandData = readInt(serverIndex);
@@ -341,7 +344,7 @@ public class ClientMonitor {
 						}
 						newMode = true;
 						updateGUI = true;
-						finishedUpdating = false;
+//						finishedUpdating = false;
 						putCommandToUpdaterBuffer(commandData);
 						putWriterCommand(1 - serverIndex, commandData); // Send
 																		// movie
@@ -395,7 +398,6 @@ public class ClientMonitor {
 		}
 	}
 
-	
 	private synchronized void putCommandToUpdaterBuffer(int com) {
 		updaterBuffer.putCommandToBuffer(com);
 		notifyAll();
@@ -410,27 +412,47 @@ public class ClientMonitor {
 			}
 		}
 		int com = updaterBuffer.getCommandFromBuffer();
-		finishedUpdating = true;
+//		finishedUpdating = true;
 		System.out.println("finished updating GUI");
 		notifyAll();
 		return com;
 	}
 
-	private synchronized void putImageToBuffer(Image image) {
-		imageBuffer.putImageToBuffer(image);
+	private synchronized void putImageToBuffer(Image image, int serverIndex) {
+		if (serverIndex == 0) {
+			imageBufferServer1.putImageToBuffer(image);
+		} else if (serverIndex == 1) {
+			imageBufferServer2.putImageToBuffer(image);
+		}
 		notifyAll();
 	}
 
 	public synchronized Image getImageFromBuffer() {
-		while (imageBuffer.getNbrOfImagesInBuffer() <= 0) {
+		while (imageBufferServer1.getNbrOfImagesInBuffer() <= 0
+				&& imageBufferServer2.getNbrOfImagesInBuffer() <= 0) {
 			try {
 				wait();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
-		Image image = imageBuffer.getImageFromBuffer();
-		finishedUpdating = true;
+		Image image;
+		if (imageS1LastTime) {// If server 1 was checked first last time
+			imageS1LastTime = !imageS1LastTime;
+			if (imageBufferServer2.getNbrOfImagesInBuffer() > 0) {
+				image = imageBufferServer2.getImageFromBuffer();
+			} else {
+				image = imageBufferServer1.getImageFromBuffer();
+			}
+		} else {// If server 2 was checked first last time
+
+			if (imageBufferServer1.getNbrOfImagesInBuffer()> 0) {
+				image = imageBufferServer1.getImageFromBuffer();
+			} else {
+				image = imageBufferServer2.getImageFromBuffer();
+			}
+		}
+//		finishedUpdating = true;
 		notifyAll();
 		return image;
 	}
