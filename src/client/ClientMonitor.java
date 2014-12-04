@@ -6,7 +6,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 public class ClientMonitor {
 
@@ -74,7 +73,7 @@ public class ClientMonitor {
 	/**
 	 * Attributes for handling commands in writer
 	 */
-	private WriterCommandBuffer writerBufferServer1, writerBufferServer2;
+	private CommandBuffer writerBufferServer1, writerBufferServer2;
 	private boolean server1LastTime; // Is used for fair checking of what server
 										// to write to.
 
@@ -97,8 +96,8 @@ public class ClientMonitor {
 		movieMode = false;
 		updateGUI = false;
 		socketAddress = socketAddr;
-		writerBufferServer1 = new WriterCommandBuffer(COMMAND_BUFFER_SIZE);
-		writerBufferServer2 = new WriterCommandBuffer(COMMAND_BUFFER_SIZE);
+		writerBufferServer1 = new CommandBuffer(COMMAND_BUFFER_SIZE);
+		writerBufferServer2 = new CommandBuffer(COMMAND_BUFFER_SIZE);
 		socket = new Socket[nbrOfSockets];
 		isConnected = new boolean[nbrOfSockets];
 		inputStream = new InputStream[nbrOfSockets];
@@ -114,10 +113,9 @@ public class ClientMonitor {
 
 	public synchronized void putWriterCommand(int serverIndex, int command) {
 		if (serverIndex == 0) {
-			writerBufferServer1.putCommandToWriterBuffer(command);
+			writerBufferServer1.putCommandToBuffer(command);
 		} else {
-			writerBufferServer2.putCommandToWriterBuffer(command);
-
+			writerBufferServer2.putCommandToBuffer(command);
 		}
 		notifyAll();
 	}
@@ -130,8 +128,8 @@ public class ClientMonitor {
 	 * 
 	 */
 	public synchronized void sendMessageToServer() throws IOException {
-		while (writerBufferServer1.getNbrOfCommandsInWriterBuffer() <= 0
-				&& writerBufferServer2.getNbrOfCommandsInWriterBuffer() <= 0) {
+		while (writerBufferServer1.getNbrOfCommandsInBuffer() <= 0
+				&& writerBufferServer2.getNbrOfCommandsInBuffer() <= 0) {
 			try {
 				wait();
 			} catch (InterruptedException e) {
@@ -142,23 +140,25 @@ public class ClientMonitor {
 		int command;
 		if (server1LastTime) {// If server 1 was checked first last time
 			server1LastTime = !server1LastTime;
-			if (writerBufferServer2.getNbrOfCommandsInWriterBuffer() > 0) {
+			if (writerBufferServer2.getNbrOfCommandsInBuffer() > 0) {
 				serverIndex = 1;
-				command = writerBufferServer2.getCommandFromWriterBuffer();
+				command = writerBufferServer2.getCommandFromBuffer();
 			} else {
 				serverIndex = 0;
-				command = writerBufferServer1.getCommandFromWriterBuffer();
+				command = writerBufferServer1.getCommandFromBuffer();
 			}
 		} else {// If server 2 was checked first last time
 
-			if (writerBufferServer1.getNbrOfCommandsInWriterBuffer() > 0) {
+			if (writerBufferServer1.getNbrOfCommandsInBuffer() > 0) {
 				serverIndex = 0;
-				command = writerBufferServer1.getCommandFromWriterBuffer();
+				command = writerBufferServer1.getCommandFromBuffer();
 			} else {
 				serverIndex = 1;
-				command = writerBufferServer2.getCommandFromWriterBuffer();
+				command = writerBufferServer2.getCommandFromBuffer();
 			}
 		}
+		System.out.println("Server is: " + serverIndex + "\n Command is: "
+				+ command);
 		switch (command) {
 		case CLOSE_CONNECTION:
 			if (isConnected[serverIndex]) {
@@ -182,24 +182,22 @@ public class ClientMonitor {
 			}
 			break;
 		case MOVIE_MODE:
+			byte[] bytes1 = ByteBuffer.allocate(4).putInt(command, 0).array();
 			for (int i = 0; i < nbrOfSockets; i++) {
 				if (isConnected[i]) {
-					byte[] bytes = ByteBuffer.allocate(4).putInt(command, 0)
-							.array();
-					outputStream[i].write(bytes);
-					outputStream[serverIndex].flush();
+					outputStream[i].write(bytes1, 0, 4);
+					outputStream[i].flush();
 				}
 			}
 			movieMode = true;
 			break;
 
 		case IDLE_MODE:
+			byte[] bytes2 = ByteBuffer.allocate(4).putInt(command, 0).array();
 			for (int i = 0; i < nbrOfSockets; i++) {
 				if (isConnected[i]) {
-					byte[] bytes = ByteBuffer.allocate(4).putInt(command, 0)
-							.array();
-					outputStream[i].write(bytes);
-					outputStream[serverIndex].flush();
+					outputStream[i].write(bytes2, 0, 4);
+					outputStream[i].flush();
 				}
 			}
 			movieMode = false;
