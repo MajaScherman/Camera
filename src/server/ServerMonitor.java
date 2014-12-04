@@ -1,11 +1,8 @@
 package server;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
 
 import se.lth.cs.eda040.fakecamera.AxisM3006V; //For constants
 import client.ClientMonitor;
@@ -14,12 +11,11 @@ public class ServerMonitor {
 	/**
 	 * Attributes for connection
 	 */
-	private ServerSocket serverSocket;
-	private Socket clientSocket;
 	private InputStream is;
-	private OutputStream os;
-	private boolean isConnected;
 
+	private boolean isConnected;
+	private int serverNbr;
+	private boolean inputStreamIsSet;
 
 	/**
 	 * Attributes for commands
@@ -32,69 +28,46 @@ public class ServerMonitor {
 			+ AxisM3006V.TIME_ARRAY_SIZE + 4 * 3;
 	public static int MESSAGE_SIZE = 4;
 
-	public ServerMonitor(int port, int cameraNbr) {
-
-		movieMode = isConnected = false;
+	public ServerMonitor(int port, int serverNbr) {
+		this.serverNbr = serverNbr;
+		movieMode = isConnected = inputStreamIsSet = false;
 		lastTimeSentImg = System.currentTimeMillis();
-		try {
-			serverSocket = new ServerSocket(port);
-		} catch (IOException e) {
-			System.out
-					.println("ServerSocket could not be created in ServerMonitor constructor");
-			e.printStackTrace();
-		}
+
 	}
 
 	public synchronized boolean isConnected() {
 		return isConnected;
 	}
 
-	public synchronized void openConnection() {
+	public synchronized void setConnectionOpened() {
 		if (isConnected) {
 			System.out.println("Server connection is already established");
 		} else {
-			try {
-				clientSocket = serverSocket.accept();// blocking until connection available
-				is = clientSocket.getInputStream();
-				os = clientSocket.getOutputStream();
-				isConnected = true;
-				lastTimeSentImg = System.currentTimeMillis();
-				notifyAll();
-			} catch (IOException e) {
-				System.out.println("Could not establish connection" + e);
-			}
+			isConnected = true;
+			lastTimeSentImg = System.currentTimeMillis();
+			notifyAll();
+
 		}
 	}
 
-	public synchronized InputStream getInputStream() {
+	public synchronized InputStream getInputStream() throws InterruptedException {
+		while (!inputStreamIsSet) {
+			wait();
+		}
 		return is;
 	}
 
-	public synchronized OutputStream getOutputStream() {
-		return os;
-	}
-
-	public synchronized void closeConnection() throws SocketException {
+	public synchronized void setConnectionClosed() throws SocketException {
 		if (!isConnected) {
 			System.out.println("Connection is already closed");
 		} else {
-			try {
-				movieMode = false;
-				isConnected = false;
-				notifyAll();
-				clientSocket.close();
-				System.out.println("CLOSED CONNECTION!");
-				// serverSocket.close();
-			} catch (IOException e) {
-				System.out.println("SPACESHIP IS CLOSED");
-				throw new SocketException(
-						"the connection is closed and IOException: " + e);
-			}
+			movieMode = false;
+			isConnected = false;
+			inputStreamIsSet = false;
+			notifyAll();
 			throw new SocketException("The connection is closed");
 		}
 	}
-
-
 
 	/**
 	 * Interprets the command and performs the correct actions.
@@ -102,7 +75,7 @@ public class ServerMonitor {
 	public synchronized void runCommand(int command) throws SocketException {
 		switch (command) {
 		case ClientMonitor.CLOSE_CONNECTION:
-			closeConnection();
+			setConnectionClosed();
 			break;
 		case ClientMonitor.MOVIE_MODE:
 			movieMode = true;
@@ -117,23 +90,44 @@ public class ServerMonitor {
 		notifyAll();
 	}
 
-	public synchronized boolean isReadyToSendMessage() {
+	public synchronized boolean isReadyToSendImage() {
 		long diff = System.currentTimeMillis() - lastTimeSentImg;
 		return (((diff >= 0) || movieMode) && isConnected);
 	}
 
 	public synchronized void waitForConnection() throws InterruptedException {
-		while(!isConnected){
+		while (!isConnected) {
 			wait();
 		}
 	}
 
-	public void setMovieMode(boolean b) {
+	public synchronized void setMovieMode(boolean b) {
 		movieMode = b;
+		notifyAll();
 	}
 
-	public void updateLastTimeSent() {
+	public synchronized void updateLastTimeSent() {
 		lastTimeSentImg = System.currentTimeMillis();
+		notifyAll();
+	}
+
+	public synchronized byte[] packageImage(int length, byte[] time,
+			byte[] image) {
+		ByteBuffer bb = ByteBuffer.allocate(12 + AxisM3006V.TIME_ARRAY_SIZE
+				+ length);
+		bb.putInt(ClientMonitor.IMAGE);
+		bb.putInt(length);
+		bb.putInt(serverNbr);// 4 bytes for every int
+		bb.put(time);
+		bb.put(image, 0, length);
+		return bb.array();
+
+	}
+
+	public synchronized void setInputStream(InputStream is2) {
+		this.is = is2;
+		inputStreamIsSet = true;
+		notifyAll();
 	}
 
 }

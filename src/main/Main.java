@@ -21,7 +21,7 @@ public class Main {
 		ServerMonitor serverMon1 = new ServerMonitor(7897, 0);
 		ServerReader serverReader1 = new ServerReader(serverMon1);
 		ServerWriter serverWriter1 = new ServerWriter(serverMon1, "localhost",
-				7897, camera1,0);
+				7897, camera1);
 		serverWriter1.start();
 		serverReader1.start();
 
@@ -29,7 +29,7 @@ public class Main {
 		ServerMonitor serverMon2 = new ServerMonitor(7898, 1);
 		ServerReader serverReader2 = new ServerReader(serverMon2);
 		ServerWriter serverWriter2 = new ServerWriter(serverMon2, "localhost",
-				7898, camera2,1);
+				7898, camera2);
 		serverWriter2.start();
 		serverReader2.start();
 

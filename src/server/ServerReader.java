@@ -2,7 +2,6 @@ package server;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.Socket;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 
@@ -27,8 +26,15 @@ public class ServerReader extends Thread {
 	public void run() {
 		while (!isInterrupted()) {
 			// mon.establishConnection();
-			while (mon.isConnected()) {
+			try {
+				mon.waitForConnection();
 				is = mon.getInputStream();
+			} catch (InterruptedException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+				System.out.println("Interrupted while waiting for connection, in serverReader");
+			}
+			while (mon.isConnected()) {
 
 				byte[] message = new byte[4];
 				int readBytes = 0;
