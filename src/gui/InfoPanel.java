@@ -37,7 +37,7 @@ public class InfoPanel extends JPanel {
 	}
 
 	public void setLabelText(int labelIndex, String text) {
-		if (labelIndex < 0 && labelIndex > 3) {
+		if (labelIndex < 1 && labelIndex > 3) {
 			System.out.println("The label index is too high or too low.");
 		}
 

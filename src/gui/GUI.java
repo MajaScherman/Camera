@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.GridLayout;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.border.Border;
 
@@ -82,8 +83,9 @@ public class GUI extends JFrame {
 
 	public void sendCommandToInfoPanel(int command) {
 		switch (command) {
-		case ClientMonitor.MOVIE_MODE:
+		case ClientMonitor.MOVIE_MODE:		
 			infoPanel.setLabelText(2, "Movie Mode");
+			buttonPanel.setButtonText(1, "IDLE MODE");
 			break;
 		case ClientMonitor.ASYNCHRONIZED:
 			infoPanel.setLabelText(1, "Asynchronized Mode");
