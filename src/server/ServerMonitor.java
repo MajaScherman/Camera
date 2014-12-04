@@ -95,15 +95,17 @@ public class ServerMonitor {
 			System.out.println("Connection is already closed");
 		} else {
 			try {
+				movieMode = false;
+				motionDetected = false;
 				isConnected = false;
 				notifyAll();
 				clientSocket.close();
 				//serverSocket.close();
-			throw new SocketException("The connection is closed");
 			} catch (IOException e) {
 				System.out.println("SPACESHIP");
 				throw new SocketException("the connection is closed and IOException: " + e);
 			}
+			throw new SocketException("The connection is closed");
 		}
 	}
 
@@ -111,36 +113,27 @@ public class ServerMonitor {
 	 * Reads the message received from the client. The package only contains 1
 	 * int to represent commands. Therefore the size of the package is only 4
 	 * bytes.
+	 * @throws Exception 
 	 */
 
-	public synchronized void readAndRunCommand() throws SocketException{
+	public synchronized void readAndRunCommand() throws Exception{
 		byte[] message = new byte[MESSAGE_SIZE];
-		int bytesLeft = MESSAGE_SIZE;
-		int tempIndex = 0;
-		while (bytesLeft > 0) {
-			// läs en byte
-			int read;
-			try {
-				read = is.read();
-				// lägg i message
-				message[tempIndex] = (byte) read;
-				tempIndex++;
-				bytesLeft--;
-			} catch (IOException e) {
-				System.out
-						.println("error in readandruncommand method server side"
-								+ e);
-				e.printStackTrace();
-			}
+		int k =0;
+		
+		try {
+			k = is.read(message, 0, MESSAGE_SIZE);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
-
-		// Konvertera till int
+		if (k != 4) {
+			System.out.println("4 byte lästes INTE in till temp server siiiiiiiide");
+			throw new Exception("Did not read 4 bytes in readAndRunCommand");
+		}
+		
 		ByteBuffer bb = ByteBuffer.wrap(message);
-		System.out.println("Last header serverside int was: " + bb.getInt(0));
-		int command = bb.getInt(0);
-		System.out.println("Command server side was: " + command);
-		runCommand(command);
-		notifyAll();
+		runCommand( bb.getInt(0));
+		
 	}
 
 	/**

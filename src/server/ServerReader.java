@@ -19,8 +19,11 @@ public class ServerReader extends Thread {
 				try {
 					mon.readAndRunCommand();
 				} catch (SocketException e) {
-					System.out.println(e + "catched the exception that we closed the connection");
+					System.out.println("catched the exception that we closed the connection");
 					mon.establishConnection();
+					
+				}catch(Exception e){
+					System.out.println(e + "The int at the inputstream wasn't read correctly");
 					
 				}
 				
