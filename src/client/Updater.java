@@ -13,7 +13,6 @@ public class Updater extends Thread {
 	}
 
 	public void run() {
-		System.out.println("Updater started");
 		while (!isInterrupted()) {
 			int type = -1;
 			try {

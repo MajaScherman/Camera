@@ -64,11 +64,8 @@ public class ClientMonitor {
 	/**
 	 * Attributes for handling commands in updater
 	 */
-	private int[] commandBuffer;
-	private int putAtC;
-	private int getAtC;
+	private CommandBuffer updaterBuffer;
 	private int[][] cameraCommands;
-	private int nbrOfCommandsInBuffer;
 
 	/**
 	 * Attributes for handling commands in writer
@@ -92,24 +89,95 @@ public class ClientMonitor {
 	public static final int NUMBER_OF_CAMERAS = 2;
 
 	public ClientMonitor(int nbrOfSockets, SocketAddress[] socketAddr) {
-		syncMode = false;
-		movieMode = false;
-		updateGUI = false;
 		socketAddress = socketAddr;
-		writerBufferServer1 = new CommandBuffer(COMMAND_BUFFER_SIZE);
-		writerBufferServer2 = new CommandBuffer(COMMAND_BUFFER_SIZE);
 		socket = new Socket[nbrOfSockets];
 		isConnected = new boolean[nbrOfSockets];
 		inputStream = new InputStream[nbrOfSockets];
 		outputStream = new OutputStream[nbrOfSockets];
 		somethingOnStream = new boolean[nbrOfSockets];
 		this.nbrOfSockets = nbrOfSockets;
+		writerBufferServer1 = new CommandBuffer(COMMAND_BUFFER_SIZE);
+		writerBufferServer2 = new CommandBuffer(COMMAND_BUFFER_SIZE);
+		updaterBuffer = new CommandBuffer(COMMAND_BUFFER_SIZE);
 		imageBuffer = new Image[IMAGE_BUFFER_SIZE];
-		commandBuffer = new int[COMMAND_BUFFER_SIZE];
-		getAt = putAt = nbrOfImgsInBuffer = 0;
-		getAtC = putAtC = nbrOfCommandsInBuffer = 0;
+		updateGUI = false;
 		finishedUpdating = true;
+		syncMode = false;
+		movieMode = false;
+		getAt = putAt = nbrOfImgsInBuffer = 0;
 	}
+	
+	/**
+	 * Establishes connection to server
+	 * 
+	 * @param serverIndex
+	 *            the index of the server we want to connect to (start from
+	 *            index 0 and goes up to socketArray.length)
+	 */
+	public synchronized void connectToServer(int serverIndex) {
+		if (!(serverIndex >= 0 && serverIndex < socket.length)) {
+			// TODO Throw exception
+			System.out.println("The server index is out of range, "
+					+ "please give a value between 0 and " + socket.length
+					+ (-1));
+		} else if (isConnected[serverIndex]) {
+			System.out.println("The server is already connected");
+		} else {
+			// Establish connection
+			// Server must be running before trying to connect
+			String host = socketAddress[serverIndex].getHost();
+			int port = socketAddress[serverIndex].getPortNumber();
+			try {
+				socket[serverIndex] = new Socket(host, port);
+				// Set socket to no send delay
+				socket[serverIndex].setTcpNoDelay(true);
+				// Get input stream
+				inputStream[serverIndex] = socket[serverIndex].getInputStream();
+				// Get output stream
+				outputStream[serverIndex] = socket[serverIndex]
+						.getOutputStream();
+				isConnected[serverIndex] = true;
+				resetAttributes();
+				notifyAll();
+				System.out.println("Server connection with server "
+						+ serverIndex + " established");
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	/**
+	 * Disconnects to the server
+	 * 
+	 * @param serverIndex
+	 *            the index of the server one wants to disconnect to
+	 */
+	public synchronized void disconnectToServer(int serverIndex) {
+		if (!(serverIndex >= 0 && serverIndex < socket.length)) {
+			// TODO Throw exception
+			System.out.println("The server index is out of range, "
+					+ "please give a value between 0 and " + socket.length);
+		} else if (!isConnected[serverIndex]) {
+			System.out.println("The server with index " + serverIndex
+					+ " is not connected");
+		} else {
+			// Close the socket, i.e. abort the connection
+			try {
+				socket[serverIndex].close();
+				isConnected[serverIndex] = false;
+				resetAttributes();
+				notifyAll();
+				System.out.println("Disconnected to server" + serverIndex
+						+ " successfully");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
 
 	public synchronized void putWriterCommand(int serverIndex, int command) {
 		if (serverIndex == 0) {
@@ -164,14 +232,8 @@ public class ClientMonitor {
 			if (isConnected[serverIndex]) {
 				byte[] bytes = ByteBuffer.allocate(4).putInt(command, 0)
 						.array();
-				// TODO controllera
-				// att
-				// byte
-				// arrays
-				// används
-				// rätt
-				// överallt
-				outputStream[serverIndex].write(bytes);
+				// TODO controllera att byte arrays används rätt överallt
+				outputStream[serverIndex].write(bytes,0,4);
 				outputStream[serverIndex].flush();
 				disconnectToServer(serverIndex);
 			}
@@ -268,6 +330,7 @@ public class ClientMonitor {
 						newImage = true;
 						updateGUI = true;
 						finishedUpdating = false;
+						System.out.println("Not finished updating GUI");
 						putImageToBuffer(image);// data contains the image
 						notifyAll();
 					} else if (type == COMMAND) {
@@ -281,7 +344,15 @@ public class ClientMonitor {
 						}
 						newMode = true;
 						updateGUI = true;
+						finishedUpdating = false;
 						putCommandToUpdaterBuffer(commandData);
+						putWriterCommand(1 - serverIndex, commandData); // Send
+																		// movie
+																		// mode
+																		// to
+																		// the
+																		// other
+																		// server
 						notifyAll();
 					} else {
 						throw new Exception("You got a non existing type :D");
@@ -327,101 +398,23 @@ public class ClientMonitor {
 		}
 	}
 
-	/**
-	 * Establishes connection to server
-	 * 
-	 * @param serverIndex
-	 *            the index of the server we want to connect to (start from
-	 *            index 0 and goes up to socketArray.length)
-	 */
-	public synchronized void connectToServer(int serverIndex) {
-		if (!(serverIndex >= 0 && serverIndex < socket.length)) {
-			// TODO Throw exception
-			System.out.println("The server index is out of range, "
-					+ "please give a value between 0 and " + socket.length
-					+ (-1));
-		} else if (isConnected[serverIndex]) {
-			System.out.println("The server is already connected");
-		} else {
-			// Establish connection
-			// Server must be running before trying to connect
-			String host = socketAddress[serverIndex].getHost();
-			int port = socketAddress[serverIndex].getPortNumber();
-			try {
-				socket[serverIndex] = new Socket(host, port);
-				// Set socket to no send delay
-				socket[serverIndex].setTcpNoDelay(true);
-				// Get input stream
-				inputStream[serverIndex] = socket[serverIndex].getInputStream();
-				// Get output stream
-				outputStream[serverIndex] = socket[serverIndex]
-						.getOutputStream();
-				isConnected[serverIndex] = true;
-				notifyAll();
-				System.out.println("Server connection with server "
-						+ serverIndex + " established");
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	/**
-	 * Disconnects to the server
-	 * 
-	 * @param serverIndex
-	 *            the index of the server one wants to disconnect to
-	 */
-	public synchronized void disconnectToServer(int serverIndex) {
-		if (!(serverIndex >= 0 && serverIndex < socket.length)) {
-			// TODO Throw exception
-			System.out.println("The server index is out of range, "
-					+ "please give a value between 0 and " + socket.length);
-		} else if (!isConnected[serverIndex]) {
-			System.out.println("The server with index " + serverIndex
-					+ " is not connected");
-		} else {
-			// Close the socket, i.e. abort the connection
-			try {
-				socket[serverIndex].close();
-				isConnected[serverIndex] = false;
-				notifyAll();
-				System.out.println("Disconnected to server" + serverIndex
-						+ " successfully");
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
+	
 	private synchronized void putCommandToUpdaterBuffer(int com) {
-		commandBuffer[putAtC] = com;
-		putAtC++;
-		nbrOfCommandsInBuffer++;
-		if (putAtC >= COMMAND_BUFFER_SIZE) {
-			putAtC = 0;
-		}
+		updaterBuffer.putCommandToBuffer(com);
 		notifyAll();
 	}
 
 	public synchronized int getCommandFromUpdaterBuffer() {
-		while (nbrOfCommandsInBuffer <= 0) {
+		while (updaterBuffer.getNbrOfCommandsInBuffer() <= 0) {
 			try {
 				wait();
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
-		int com = commandBuffer[getAtC];
-		getAtC++;
-		nbrOfCommandsInBuffer--;
-		if (getAtC >= COMMAND_BUFFER_SIZE) {
-			getAtC = 0;
-		}
+		int com = updaterBuffer.getCommandFromBuffer();
 		finishedUpdating = true;
+		System.out.println("finished updating GUI");
 		notifyAll();
 		return com;
 	}
