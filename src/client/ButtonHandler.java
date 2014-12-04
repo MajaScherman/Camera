@@ -23,8 +23,8 @@ public class ButtonHandler implements ActionListener {
 		try {
 			switch (actionCommand) {
 			case "IDLE":
-				mon.putWriterCommand(0, ClientMonitor.IDLE_MODE); // Notice that
-				mon.putWriterCommand(1, ClientMonitor.IDLE_MODE);												// we send in a
+				mon.putCommandToClientWriter(0, ClientMonitor.IDLE_MODE); // Notice that
+				mon.putCommandToClientWriter(1, ClientMonitor.IDLE_MODE);												// we send in a
 																// serverIndex 0,
 																// but this is
 																// however
@@ -39,8 +39,8 @@ public class ButtonHandler implements ActionListener {
 				infoPanel.setLabelText(2, "Idle Mode");
 				break;
 			case "MOVIE":
-				mon.putWriterCommand(0, ClientMonitor.MOVIE_MODE);
-				mon.putWriterCommand(1, ClientMonitor.MOVIE_MODE);
+				mon.putCommandToClientWriter(0, ClientMonitor.MOVIE_MODE);
+				mon.putCommandToClientWriter(1, ClientMonitor.MOVIE_MODE);
 				JButton temp2 = (JButton) evt.getSource();
 				temp2.setText("IDLE MODE");
 				temp2.setActionCommand("IDLE");		
@@ -50,25 +50,25 @@ public class ButtonHandler implements ActionListener {
 				JButton temp3 = (JButton) evt.getSource();
 				temp3.setText("OPEN CONNECTION 1");
 				temp3.setActionCommand("OPEN CONNECTION 1");
-				mon.putWriterCommand(0, ClientMonitor.CLOSE_CONNECTION);
+				mon.putCommandToClientWriter(0, ClientMonitor.CLOSE_CONNECTION);
 				break;
 			case "CLOSE CONNECTION 2":
 				JButton temp4 = (JButton) evt.getSource();
 				temp4.setText("OPEN CONNECTION 2");
 				temp4.setActionCommand("OPEN CONNECTION 2");
-				mon.putWriterCommand(1, ClientMonitor.CLOSE_CONNECTION);
+				mon.putCommandToClientWriter(1, ClientMonitor.CLOSE_CONNECTION);
 				break;
 			case "OPEN CONNECTION 1":
 				JButton temp5 = (JButton) evt.getSource();
 				temp5.setText("CLOSE CONNECTION 1");
 				temp5.setActionCommand("CLOSE CONNECTION 1");
-				mon.putWriterCommand(0, ClientMonitor.OPEN_CONNECTION);
+				mon.putCommandToClientWriter(0, ClientMonitor.OPEN_CONNECTION);
 				break;
 			case "OPEN CONNECTION 2":
 				JButton temp6 = (JButton) evt.getSource();
 				temp6.setText("CLOSE CONNECTION 2");
 				temp6.setActionCommand("CLOSE CONNECTION 2");
-				mon.putWriterCommand(1, ClientMonitor.OPEN_CONNECTION);
+				mon.putCommandToClientWriter(1, ClientMonitor.OPEN_CONNECTION);
 				break;
 			case "SYNCHRONIZED":
 				//TODO FIX Sync modes

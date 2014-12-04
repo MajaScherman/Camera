@@ -180,13 +180,91 @@ public class ClientMonitor {
 		}
 	}
 
-	public synchronized void putWriterCommand(int serverIndex, int command) {
-		if (serverIndex == 0) {
-			writerBufferServer1.putCommandToBuffer(command);
+	/**
+	 * This method receives messages from the server.
+	 * 
+	 * @param server
+	 *            The server to listen to starting from index 0
+	 * @throws Exception
+	 */
+	public synchronized void listenToServer(int serverIndex) throws Exception {
+		if (serverIndex >= 0 && serverIndex < nbrOfSockets) {
+			try {
+				while (!isConnected[serverIndex]) {// || !finishedUpdating
+					wait();
+				}
+				// System.out.println("read header client side");
+				// Read header - read is blocking
+				if (somethingOnStream[serverIndex]) {
+					System.out.println("frogie");
+					int type = readInt(serverIndex);
+					System.out.println("Type is " + type);
+					if (type == IMAGE) {
+						int size = readInt(serverIndex);
+						System.out.println("Package size client side JPEG"
+								+ size);
+						int cameraNumber = readInt(serverIndex);
+						System.out.println("Camera number client side is "
+								+ cameraNumber);
+
+						byte[] temp = readByteArray(serverIndex, 8);
+						ByteBuffer bb = ByteBuffer.wrap(temp);
+						long timeStamp = bb.getLong();
+
+						System.out.println("Timestamp client side is "
+								+ timeStamp);
+
+						long delay = System.currentTimeMillis() - timeStamp;
+
+						System.out.println("Delay client side is " + delay);
+
+						Image image = new Image(cameraNumber, timeStamp, delay,
+								readByteArray(serverIndex, size));
+
+						newImage = true;
+						updateGUI = true;
+//						finishedUpdating = false;
+						System.out.println("Not finished updating GUI");
+						putImageToBuffer(image, serverIndex);// data contains
+																// the image
+						notifyAll();
+					} else if (type == COMMAND) {
+						int commandData = readInt(serverIndex);
+						System.out.println("command data client side is"
+								+ commandData);
+						if (commandData != MOVIE_MODE) {
+							throw new Exception(
+									"Client have recieved an invalid command");
+
+						}
+						newMode = true;
+						updateGUI = true;
+//						finishedUpdating = false;
+						putCommandToUpdaterBuffer(commandData);
+						putCommandToClientWriter(1 - serverIndex, commandData); // Send
+																		// movie
+																		// mode
+																		// to
+																		// the
+																		// other
+																		// server
+						notifyAll();
+					} else {
+						throw new Exception("You got a non existing type :D");
+					}
+				} else {
+
+				}
+				// TODO verifiera att paket är korrekt
+			} catch (IOException e) {
+				// Occurs in read method of
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		} else {
-			writerBufferServer2.putCommandToBuffer(command);
+			System.out.println("Check your server indices");
 		}
-		notifyAll();
 	}
 
 	/**
@@ -267,135 +345,13 @@ public class ClientMonitor {
 		notifyAll();
 	}
 
-	public synchronized void somethingOnStream(int serverIndex)
-			throws IOException, InterruptedException {
-		// TODO controll that this is corectly implemented
-		while (!isConnected[serverIndex]) {
-			wait();
-		}
-		if (inputStream[serverIndex].available() > 0) {
-			System.out
-					.println("trueie****************************************************************");
-			somethingOnStream[serverIndex] = true;
-			// notifyAll();
+	public synchronized void putCommandToClientWriter(int serverIndex, int command) {
+		if (serverIndex == 0) {
+			writerBufferServer1.putCommandToBuffer(command);
 		} else {
-			// System.out.println("falsie");
-			somethingOnStream[serverIndex] = false;
-			// notifyAll();
+			writerBufferServer2.putCommandToBuffer(command);
 		}
-	}
-
-	/**
-	 * This method receives messages from the server.
-	 * 
-	 * @param server
-	 *            The server to listen to starting from index 0
-	 * @throws Exception
-	 */
-	public synchronized void listenToServer(int serverIndex) throws Exception {
-		if (serverIndex >= 0 && serverIndex < nbrOfSockets) {
-			try {
-				while (!isConnected[serverIndex]) {// || !finishedUpdating
-					wait();
-				}
-				// System.out.println("read header client side");
-				// Read header - read is blocking
-				if (somethingOnStream[serverIndex]) {
-					System.out.println("frogie");
-					int type = readInt(serverIndex);
-					System.out.println("Type is " + type);
-					if (type == IMAGE) {
-						int size = readInt(serverIndex);
-						System.out.println("Package size client side JPEG"
-								+ size);
-						int cameraNumber = readInt(serverIndex);
-						System.out.println("Camera number client side is "
-								+ cameraNumber);
-
-						byte[] temp = readByteArray(serverIndex, 8);
-						ByteBuffer bb = ByteBuffer.wrap(temp);
-						long timeStamp = bb.getLong();
-
-						System.out.println("Timestamp client side is "
-								+ timeStamp);
-
-						long delay = System.currentTimeMillis() - timeStamp;
-
-						System.out.println("Delay client side is " + delay);
-
-						Image image = new Image(cameraNumber, timeStamp, delay,
-								readByteArray(serverIndex, size));
-
-						newImage = true;
-						updateGUI = true;
-//						finishedUpdating = false;
-						System.out.println("Not finished updating GUI");
-						putImageToBuffer(image, serverIndex);// data contains
-																// the image
-						notifyAll();
-					} else if (type == COMMAND) {
-						int commandData = readInt(serverIndex);
-						System.out.println("command data client side is"
-								+ commandData);
-						if (commandData != MOVIE_MODE) {
-							throw new Exception(
-									"Client have recieved an invalid command");
-
-						}
-						newMode = true;
-						updateGUI = true;
-//						finishedUpdating = false;
-						putCommandToUpdaterBuffer(commandData);
-						putWriterCommand(1 - serverIndex, commandData); // Send
-																		// movie
-																		// mode
-																		// to
-																		// the
-																		// other
-																		// server
-						notifyAll();
-					} else {
-						throw new Exception("You got a non existing type :D");
-					}
-				} else {
-
-				}
-				// TODO verifiera att paket är korrekt
-			} catch (IOException e) {
-				// Occurs in read method of
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		} else {
-			System.out.println("Check your server indices");
-		}
-	}
-
-	/**
-	 * Tells the updater to update the GUI when time is due.
-	 */
-	public synchronized int checkUpdate() throws Exception {
-		while (updateGUI == false) {
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		updateGUI = false;
-		if (newImage) {
-			newImage = false;
-			notifyAll();
-			return IMAGE;
-		} else if (newMode) {
-			newMode = false;
-			notifyAll();
-			return COMMAND;
-		} else {
-			notifyAll();
-			throw new Exception("Check update method is wrong");
-		}
+		notifyAll();
 	}
 
 	private synchronized void putCommandToUpdaterBuffer(int com) {
@@ -500,6 +456,50 @@ public class ClientMonitor {
 		// Konvertera till int
 		ByteBuffer bb = ByteBuffer.wrap(temp);
 		return bb.getInt(0);
+	}
+
+	/**
+	 * Tells the updater to update the GUI when time is due.
+	 */
+	public synchronized int checkUpdate() throws Exception {
+		while (updateGUI == false) {
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		updateGUI = false;
+		if (newImage) {
+			newImage = false;
+			notifyAll();
+			return IMAGE;
+		} else if (newMode) {
+			newMode = false;
+			notifyAll();
+			return COMMAND;
+		} else {
+			notifyAll();
+			throw new Exception("Check update method is wrong");
+		}
+	}
+
+	public synchronized void somethingOnStream(int serverIndex)
+			throws IOException, InterruptedException {
+		// TODO controll that this is corectly implemented
+		while (!isConnected[serverIndex]) {
+			wait();
+		}
+		if (inputStream[serverIndex].available() > 0) {
+			System.out
+					.println("trueie****************************************************************");
+			somethingOnStream[serverIndex] = true;
+			// notifyAll();
+		} else {
+			// System.out.println("falsie");
+			somethingOnStream[serverIndex] = false;
+			// notifyAll();
+		}
 	}
 
 	public synchronized long SyncMode(Image imageC1, Image imageC2) {
