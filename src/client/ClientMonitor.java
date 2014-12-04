@@ -485,5 +485,10 @@ public class ClientMonitor {
 		ByteBuffer bb = ByteBuffer.wrap(temp);
 		return bb.getInt(0);
 	}
+	
+	public synchronized long SyncMode (Image imageC1, Image imageC2 ){
+		
+		return 0;
+	}
 
 }

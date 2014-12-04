@@ -24,4 +24,12 @@ public class Image {
 	public long  getTimeStamp(){
 		return timeStamp;
 	}
+	public boolean isSynchronized(){
+		if(delay<200){
+			return true;
+		}else{
+			return false;
+		}
+		
+	}
 }
