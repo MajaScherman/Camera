@@ -26,7 +26,12 @@ public class ServerReader extends Thread {
 
 	public void run() {
 		while (!isInterrupted()) {
-			// mon.establishConnection();
+			try {
+				mon.waitForConnection();
+			} catch (InterruptedException e2) {
+				e2.printStackTrace();
+			}
+			is = mon.getInputStream();
 			while (mon.isConnected()) {
 				is = mon.getInputStream();
 
@@ -34,16 +39,12 @@ public class ServerReader extends Thread {
 				int readBytes = 0;
 
 				try {
-					System.out.println("going to read input stream ");
 					readBytes = is.read(message, 0, 4);
-					System.out.println("have read " + readBytes + " bytes");
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 				if (readBytes != 4) {
-					System.out
-							.println("4 byte lästes INTE in till temp server siiiiiiiide");
+					System.out.println("4 byte was not read from inputstream server reader");
 		
 				}
 
