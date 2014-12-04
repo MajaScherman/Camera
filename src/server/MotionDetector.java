@@ -9,12 +9,6 @@ public class MotionDetector extends Thread {
 
 	public void run() {
 		while (!isInterrupted()) {
-			try {
-				sleep(100);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 			mon.motionDetection();
 		}
 	}
