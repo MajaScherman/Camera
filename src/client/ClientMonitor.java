@@ -137,7 +137,7 @@ public class ClientMonitor {
 				outputStream[serverIndex] = socket[serverIndex]
 						.getOutputStream();
 				isConnected[serverIndex] = true;
-				resetAttributes();
+				//resetAttributes();
 				notifyAll();
 				System.out.println("Server connection with server "
 						+ serverIndex + " established");
@@ -168,7 +168,7 @@ public class ClientMonitor {
 			try {
 				socket[serverIndex].close();
 				isConnected[serverIndex] = false;
-				resetAttributes();
+				//resetAttributes();
 				notifyAll();
 				System.out.println("Disconnected to server" + serverIndex
 						+ " successfully");
