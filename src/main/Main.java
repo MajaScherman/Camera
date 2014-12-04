@@ -66,8 +66,6 @@ public class Main {
 		 */
 		Updater updater = new Updater(clientMon,gui);
 		updater.start();
-		
-
 
 	}
 

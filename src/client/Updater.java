@@ -35,7 +35,7 @@ public class Updater extends Thread {
 				}
 			} else if (type == ClientMonitor.COMMAND) {
 				System.out.println("update recognized an command update");
-				int command = mon.getCommandFromBuffer();
+				int command = mon.getCommandFromUpdaterBuffer();
 				gui.sendCommandToInfoPanel(command);
 
 			}

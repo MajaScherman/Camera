@@ -74,8 +74,9 @@ public class ClientMonitor {
 	/**
 	 * Attributes for handling commands in writer
 	 */
-	private int[] writerCommand;
-	private boolean[] newCommand;
+	private WriterCommandBuffer writerBufferServer1, writerBufferServer2;
+	private boolean server1LastTime; // Is used for fair checking of what server
+										// to write to.
 
 	/**
 	 * attributes for reader, connection //TODO
@@ -96,8 +97,8 @@ public class ClientMonitor {
 		movieMode = false;
 		updateGUI = false;
 		socketAddress = socketAddr;
-		writerCommand = new int[nbrOfSockets];
-		newCommand = new boolean[nbrOfSockets];
+		writerBufferServer1 = new WriterCommandBuffer(COMMAND_BUFFER_SIZE);
+		writerBufferServer2 = new WriterCommandBuffer(COMMAND_BUFFER_SIZE);
 		socket = new Socket[nbrOfSockets];
 		isConnected = new boolean[nbrOfSockets];
 		inputStream = new InputStream[nbrOfSockets];
@@ -111,9 +112,13 @@ public class ClientMonitor {
 		finishedUpdating = true;
 	}
 
-	public synchronized void putCommandToWriter(int serverIndex, int command) {
-		writerCommand[serverIndex] = command;
-		newCommand[serverIndex] = true;
+	public synchronized void putWriterCommand(int serverIndex, int command) {
+		if (serverIndex == 0) {
+			writerBufferServer1.putCommandToWriterBuffer(command);
+		} else {
+			writerBufferServer2.putCommandToWriterBuffer(command);
+
+		}
 		notifyAll();
 	}
 
@@ -125,7 +130,8 @@ public class ClientMonitor {
 	 * 
 	 */
 	public synchronized void sendMessageToServer() throws IOException {
-		while (!newCommand[0] && !newCommand[1]) {
+		while (writerBufferServer1.getNbrOfCommandsInWriterBuffer() <= 0
+				&& writerBufferServer2.getNbrOfCommandsInWriterBuffer() <= 0) {
 			try {
 				wait();
 			} catch (InterruptedException e) {
@@ -133,18 +139,31 @@ public class ClientMonitor {
 			}
 		}
 		int serverIndex;
-		if (newCommand[0]) {
-			serverIndex = 0;
-		} else {
-			serverIndex = 1;
+		int command;
+		if (server1LastTime) {// If server 1 was checked first last time
+			server1LastTime = !server1LastTime;
+			if (writerBufferServer2.getNbrOfCommandsInWriterBuffer() > 0) {
+				serverIndex = 1;
+				command = writerBufferServer2.getCommandFromWriterBuffer();
+			} else {
+				serverIndex = 0;
+				command = writerBufferServer1.getCommandFromWriterBuffer();
+			}
+		} else {// If server 2 was checked first last time
+
+			if (writerBufferServer1.getNbrOfCommandsInWriterBuffer() > 0) {
+				serverIndex = 0;
+				command = writerBufferServer1.getCommandFromWriterBuffer();
+			} else {
+				serverIndex = 1;
+				command = writerBufferServer2.getCommandFromWriterBuffer();
+			}
 		}
-		newCommand[serverIndex] = false;
-		// notifyAll();
-		switch (writerCommand[serverIndex]) {
+		switch (command) {
 		case CLOSE_CONNECTION:
 			if (isConnected[serverIndex]) {
-				byte[] bytes = ByteBuffer.allocate(4)
-						.putInt(writerCommand[serverIndex],0).array();
+				byte[] bytes = ByteBuffer.allocate(4).putInt(command, 0)
+						.array();
 				// TODO controllera
 				// att
 				// byte
@@ -165,8 +184,8 @@ public class ClientMonitor {
 		case MOVIE_MODE:
 			for (int i = 0; i < nbrOfSockets; i++) {
 				if (isConnected[i]) {
-					byte[] bytes = ByteBuffer.allocate(4)
-							.putInt(writerCommand[serverIndex],0).array();
+					byte[] bytes = ByteBuffer.allocate(4).putInt(command, 0)
+							.array();
 					outputStream[i].write(bytes);
 					outputStream[serverIndex].flush();
 				}
@@ -177,8 +196,8 @@ public class ClientMonitor {
 		case IDLE_MODE:
 			for (int i = 0; i < nbrOfSockets; i++) {
 				if (isConnected[i]) {
-					byte[] bytes = ByteBuffer.allocate(4)
-							.putInt(writerCommand[serverIndex],0).array();
+					byte[] bytes = ByteBuffer.allocate(4).putInt(command, 0)
+							.array();
 					outputStream[i].write(bytes);
 					outputStream[serverIndex].flush();
 				}
@@ -264,7 +283,7 @@ public class ClientMonitor {
 						}
 						newMode = true;
 						updateGUI = true;
-						putCommandToBuffer(commandData);
+						putCommandToUpdaterBuffer(commandData);
 						notifyAll();
 					} else {
 						throw new Exception("You got a non existing type :D");
@@ -379,7 +398,7 @@ public class ClientMonitor {
 		}
 	}
 
-	private synchronized void putCommandToBuffer(int com) {
+	private synchronized void putCommandToUpdaterBuffer(int com) {
 		commandBuffer[putAtC] = com;
 		putAtC++;
 		nbrOfCommandsInBuffer++;
@@ -389,7 +408,7 @@ public class ClientMonitor {
 		notifyAll();
 	}
 
-	public synchronized int getCommandFromBuffer() {
+	public synchronized int getCommandFromUpdaterBuffer() {
 		while (nbrOfCommandsInBuffer <= 0) {
 			try {
 				wait();
@@ -485,9 +504,9 @@ public class ClientMonitor {
 		ByteBuffer bb = ByteBuffer.wrap(temp);
 		return bb.getInt(0);
 	}
-	
-	public synchronized long SyncMode (Image imageC1, Image imageC2 ){
-		
+
+	public synchronized long SyncMode(Image imageC1, Image imageC2) {
+
 		return 0;
 	}
 

@@ -99,7 +99,6 @@ public class ServerMonitor {
 				notifyAll();
 				clientSocket.close();
 				//serverSocket.close();
-				System.out.println("soon to send our SPACESHIP");
 			throw new SocketException("The connection is closed");
 			} catch (IOException e) {
 				System.out.println("SPACESHIP");
