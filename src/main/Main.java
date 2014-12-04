@@ -2,7 +2,6 @@ package main;
 
 import gui.GUI;
 import se.lth.cs.eda040.fakecamera.AxisM3006V;
-import server.MotionDetector;
 import server.ServerMonitor;
 import server.ServerReader;
 import server.ServerWriter;
@@ -17,26 +16,22 @@ public class Main {
 		/**
 		 * Start up two servers
 		 */
-		
+
 		AxisM3006V camera1 = new AxisM3006V();
-		ServerMonitor serverMon1 = new ServerMonitor(7897,
-				"localhost", 0, camera1);
+		ServerMonitor serverMon1 = new ServerMonitor(7897, 0);
 		ServerReader serverReader1 = new ServerReader(serverMon1);
-		ServerWriter serverWriter1 = new ServerWriter(serverMon1);
-		MotionDetector md1 = new MotionDetector(serverMon1);
-		serverReader1.start();
+		ServerWriter serverWriter1 = new ServerWriter(serverMon1, "localhost",
+				7897, camera1,0);
 		serverWriter1.start();
-		md1.start();
-		
+		serverReader1.start();
+
 		AxisM3006V camera2 = new AxisM3006V();
-		ServerMonitor serverMon2 = new ServerMonitor(7898,
-				"localhost", 1, camera2);
+		ServerMonitor serverMon2 = new ServerMonitor(7898, 1);
 		ServerReader serverReader2 = new ServerReader(serverMon2);
-		ServerWriter serverWriter2 = new ServerWriter(serverMon2);
-		MotionDetector md2 = new MotionDetector(serverMon2);
-		serverReader2.start();
+		ServerWriter serverWriter2 = new ServerWriter(serverMon2, "localhost",
+				7898, camera2,1);
 		serverWriter2.start();
-		md2.start();
+		serverReader2.start();
 
 		/**
 		 * Start up the client
@@ -58,13 +53,13 @@ public class Main {
 		/**
 		 * Start up the GUI
 		 */
-		
+
 		GUI gui = new GUI(clientMon);
 
 		/**
 		 * Start up the updater
 		 */
-		Updater updater = new Updater(clientMon,gui);
+		Updater updater = new Updater(clientMon, gui);
 		updater.start();
 
 	}

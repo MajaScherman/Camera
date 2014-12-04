@@ -135,6 +135,7 @@ public class ClientMonitor {
 				outputStream[serverIndex] = socket[serverIndex]
 						.getOutputStream();
 				isConnected[serverIndex] = true;
+
 				if (serverIndex == 0) {
 					writerBufferServer1 = new CommandBuffer(COMMAND_BUFFER_SIZE);
 				} else {
