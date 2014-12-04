@@ -32,33 +32,39 @@ public class ServerReader extends Thread {
 			} catch (InterruptedException e2) {
 				// TODO Auto-generated catch block
 				e2.printStackTrace();
-				System.out.println("Interrupted while waiting for connection, in serverReader");
+				System.out
+						.println("Interrupted while waiting for connection, in serverReader");
 			}
 			while (mon.isConnected()) {
 				byte[] message = new byte[4];
-				int readBytes = 0;
 
-				try {
-					readBytes = is.read(message, 0, 4);
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
-				if (readBytes != 4) {
-					System.out.println("4 byte was not read from inputstream server reader");
-		
-				}
+				int bytesRead = 0;
+				int bytesLeft = 4;
+				int status = 0;
 
+				do {
+					try {
+						status = is.read(message, bytesRead, bytesLeft);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					if (status > 0) {
+						bytesRead += status;
+						bytesLeft -= status;
+					}
+				} while (status > 0);
 				ByteBuffer bb = ByteBuffer.wrap(message);
 				try {
 					mon.runCommand(bb.getInt(0));
 				} catch (SocketException e) {
-					e.printStackTrace();
+					//e.printStackTrace();
 					try {
 						mon.waitForConnection();
 						is = mon.getInputStream();
 					} catch (InterruptedException e1) {
 						e1.printStackTrace();
-						System.out.println("Interrupted while waiting for connection, in serverReader");
+						System.out
+								.println("Interrupted while waiting for connection, in serverReader");
 					}
 				}
 

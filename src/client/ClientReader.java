@@ -29,41 +29,51 @@ public class ClientReader extends Thread {
 				mon.waitForConnection(serverIndex);
 			} catch (InterruptedException e2) {
 				e2.printStackTrace();
-				System.out.println(e2 + "got an interrupted exception client reader");
+				System.out.println(e2
+						+ "got an interrupted exception client reader");
 			}
 			is = mon.getInputStream(serverIndex);
+			try {
+				while (mon.isConnected(serverIndex)) {
 
-			while (mon.isConnected(serverIndex)) {
-				int type = readInt(serverIndex);
-				if (type == mon.IMAGE) {
-					int size = readInt(serverIndex);
-					int cameraNumber = readInt(serverIndex);
+					int type = readInt(serverIndex);
+					if (type == mon.IMAGE) {
+						int size = readInt(serverIndex);
+						int cameraNumber = readInt(serverIndex);
 
-					byte[] temp = readByteArray(serverIndex, 8);
-					ByteBuffer bb = ByteBuffer.wrap(temp);
-					long timeStamp = bb.getLong();
-					long delay = System.currentTimeMillis() - timeStamp;
-					Image image = new Image(cameraNumber, timeStamp, delay,
-							readByteArray(serverIndex, size));
+						byte[] temp = readByteArray(serverIndex, 8);
+						ByteBuffer bb = ByteBuffer.wrap(temp);
+						long timeStamp = bb.getLong();
+						long delay = System.currentTimeMillis() - timeStamp;
+						Image image = new Image(cameraNumber, timeStamp, delay,
+								readByteArray(serverIndex, size));
 
-					mon.setNewImage(true);
-					mon.setUpdateGUI(true);
+						mon.setNewImage(true);
+						mon.setUpdateGUI(true);
 
-					mon.putImageToBuffer(image, serverIndex);
-				} else if (type == mon.COMMAND) {
-					int commandData = readInt(serverIndex);
-					if (commandData != mon.MOVIE_MODE) {
-						System.out
-								.println("Client have recieved an invalid command");
+						mon.putImageToBuffer(image, serverIndex);
+					} else if (type == mon.COMMAND) {
+						int commandData = readInt(serverIndex);
+						if (commandData != mon.MOVIE_MODE) {
+							System.out
+									.println("Client have recieved an invalid command");
 
+						}
+						mon.setNewCommand(true);
+						mon.setUpdateGUI(true);
+
+						mon.putCommandToUpdaterBuffer(commandData);
+						mon.putCommandToClientWriter(1 - serverIndex,
+								commandData);
+					} else {
+						System.out.println("You got a non existing type :D");
 					}
-					mon.setNewCommand(true);
-					mon.setUpdateGUI(true);
-
-					mon.putCommandToUpdaterBuffer(commandData);
-					mon.putCommandToClientWriter(1 - serverIndex, commandData);
-				} else {
-					System.out.println("You got a non existing type :D");
+				}
+			} catch (SocketException e) {
+				try {
+					mon.waitForConnection(serverIndex);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
 				}
 			}
 		}
@@ -71,27 +81,38 @@ public class ClientReader extends Thread {
 
 	private synchronized byte[] readByteArray(int serverIndex, int size) {
 		byte[] message = new byte[size];
-		int readBytes = 0;
 
-		try {
-			readBytes = is.read(message, 0, size);
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		if (readBytes != size) {
-			System.out
-					.println("8 byte was not read from inputstream server reader");
+		int bytesRead = 0;
+		int bytesLeft = size;
+		int status = 0;
+		do {
+			try {
+				status = is.read(message, bytesRead, bytesLeft);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				System.out
+						.println("got ioexception when reading byte array in client reader");
+			}
+			// The 'status' variable now holds the no. of bytes read,
+			// or -1 if no more data is available
+			if (status > 0) {
+				bytesRead += status;
+				bytesLeft -= status;
+			}
+		} while (status > 0);
 
-		}
 		return message;
 	}
 
-	private int readInt(int serverIndex) {
+	private int readInt(int serverIndex) throws SocketException {
 		byte[] temp = new byte[4];
 		int readBytes = 0;
 		try {
 			readBytes = is.read(temp, 0, 4);
 
+		} catch (SocketException e) {
+			throw e;
 		} catch (IOException e) {
 			System.out.println("Failed to read an int in client Reader");
 			e.printStackTrace();

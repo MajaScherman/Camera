@@ -24,7 +24,6 @@ public class ClientWriter extends Thread {
 				int serverIndex = commandAndServerIndex[1];
 				switch (command) {
 				case ClientMonitor.CLOSE_CONNECTION:
-					System.out.println("is in close connection");
 					if (mon.isConnected(commandAndServerIndex[1])) {
 						byte[] bytes = ByteBuffer.allocate(4)
 								.putInt(command, 0).array();
@@ -34,13 +33,11 @@ public class ClientWriter extends Thread {
 					}
 					break;
 				case ClientMonitor.OPEN_CONNECTION:
-					System.out.println("is in open connection");
 					if (!mon.isConnected(serverIndex)) {
 						mon.connectToServer(serverIndex);
 					}
 					break;
 				case ClientMonitor.MOVIE_MODE:
-					System.out.println("is in movie mode");
 					byte[] bytes1 = ByteBuffer.allocate(4).putInt(0,command).array();
 					for (int i = 0; i < 2; i++) {
 						if (mon.isConnected(i)) {
@@ -51,7 +48,6 @@ public class ClientWriter extends Thread {
 					break;
 
 				case ClientMonitor.IDLE_MODE:
-					System.out.println("is in idle mode");
 					byte[] bytes2 = ByteBuffer.allocate(4).putInt(0,command)
 							.array();
 					for (int i = 0; i < 2; i++) {
@@ -62,6 +58,8 @@ public class ClientWriter extends Thread {
 						}
 					}
 					break;
+				default: System.out.println("Got an unexpected command in client writer");
+				break;
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
