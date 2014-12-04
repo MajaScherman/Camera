@@ -35,7 +35,6 @@ public class ServerReader extends Thread {
 				System.out.println("Interrupted while waiting for connection, in serverReader");
 			}
 			while (mon.isConnected()) {
-
 				byte[] message = new byte[4];
 				int readBytes = 0;
 
@@ -58,7 +57,6 @@ public class ServerReader extends Thread {
 						mon.waitForConnection();
 						is = mon.getInputStream();
 					} catch (InterruptedException e1) {
-						// TODO Auto-generated catch block
 						e1.printStackTrace();
 						System.out.println("Interrupted while waiting for connection, in serverReader");
 					}

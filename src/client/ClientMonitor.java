@@ -53,7 +53,8 @@ public class ClientMonitor {
 	/**
 	 * Attributes for handling images
 	 */
-	private ImageBuffer imageBufferServer1, imageBufferServer2; // An image ring buffer
+	private ImageBuffer imageBufferServer1, imageBufferServer2; // An image ring
+																// buffer
 																// containing
 																// 125 Images
 
@@ -181,172 +182,8 @@ public class ClientMonitor {
 		}
 	}
 
-	/**
-	 * This method receives messages from the server.
-	 * 
-	 * @param server
-	 *            The server to listen to starting from index 0
-	 * @throws Exception
-	 */
-	public synchronized void listenToServer(int serverIndex) throws Exception {
-		if (serverIndex >= 0 && serverIndex < nbrOfSockets) {
-			try {
-				while (!isConnected[serverIndex]) {// || !finishedUpdating
-					wait();
-				}
-				// System.out.println("read header client side");
-				// Read header - read is blocking
-				if (somethingOnStream[serverIndex]) {
-					System.out.println("frogie");
-					int type = readInt(serverIndex);
-					System.out.println("Type is " + type);
-					if (type == IMAGE) {
-						int size = readInt(serverIndex);
-						System.out.println("Package size client side JPEG"
-								+ size);
-						int cameraNumber = readInt(serverIndex);
-						System.out.println("Camera number client side is "
-								+ cameraNumber);
-
-						byte[] temp = readByteArray(serverIndex, 8);
-						ByteBuffer bb = ByteBuffer.wrap(temp);
-						long timeStamp = bb.getLong();
-
-						System.out.println("Timestamp client side is "
-								+ timeStamp);
-
-						long delay = System.currentTimeMillis() - timeStamp;
-
-						System.out.println("Delay client side is " + delay);
-
-						Image image = new Image(cameraNumber, timeStamp, delay,
-								readByteArray(serverIndex, size));
-
-						newImage = true;
-						updateGUI = true;
-//						finishedUpdating = false;
-						System.out.println("Not finished updating GUI");
-						putImageToBuffer(image, serverIndex);// data contains
-																// the image
-						notifyAll();
-					} else if (type == COMMAND) {
-						int commandData = readInt(serverIndex);
-						System.out.println("command data client side is"
-								+ commandData);
-						if (commandData != MOVIE_MODE) {
-							throw new Exception(
-									"Client have recieved an invalid command");
-
-						}
-						newMode = true;
-						updateGUI = true;
-//						finishedUpdating = false;
-						putCommandToUpdaterBuffer(commandData);
-						putCommandToClientWriter(1 - serverIndex, commandData); // Send
-																		// movie
-																		// mode
-																		// to
-																		// the
-																		// other
-																		// server
-						notifyAll();
-					} else {
-						throw new Exception("You got a non existing type :D");
-					}
-				} else {
-
-				}
-				// TODO verifiera att paket är korrekt
-			} catch (IOException e) {
-				// Occurs in read method of
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		} else {
-			System.out.println("Check your server indices");
-		}
-	}
-
-	/**
-	 * Sends only an int to the server 0=close connection 1=movieMode 2=idle
-	 * 3=connect to server
-	 * 
-	 * @throws IOException
-	 * 
-	 */
-	public synchronized void sendMessageToServer() throws IOException {
-		while (writerBufferServer1.getNbrOfCommandsInBuffer() <= 0
-				&& writerBufferServer2.getNbrOfCommandsInBuffer() <= 0) {
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		int serverIndex;
-		int command;
-		if (server1LastTime) {// If server 1 was checked first last time
-			server1LastTime = !server1LastTime;
-			if (writerBufferServer2.getNbrOfCommandsInBuffer() > 0) {
-				serverIndex = 1;
-				command = writerBufferServer2.getCommandFromBuffer();
-			} else {
-				serverIndex = 0;
-				command = writerBufferServer1.getCommandFromBuffer();
-			}
-		} else {// If server 2 was checked first last time
-	
-			if (writerBufferServer1.getNbrOfCommandsInBuffer() > 0) {
-				serverIndex = 0;
-				command = writerBufferServer1.getCommandFromBuffer();
-			} else {
-				serverIndex = 1;
-				command = writerBufferServer2.getCommandFromBuffer();
-			}
-		}
-		switch (command) {
-		case CLOSE_CONNECTION:
-			if (isConnected[serverIndex]) {
-				byte[] bytes = ByteBuffer.allocate(4).putInt(command, 0)
-						.array();
-				// TODO controllera att byte arrays används rätt överallt
-				outputStream[serverIndex].write(bytes, 0, 4);
-				outputStream[serverIndex].flush();
-				disconnectToServer(serverIndex);
-			}
-			break;
-		case OPEN_CONNECTION:
-			if (!isConnected[serverIndex]) {
-				connectToServer(serverIndex);
-			}
-			break;
-		case MOVIE_MODE:
-			byte[] bytes1 = ByteBuffer.allocate(4).putInt(command, 0).array();
-			for (int i = 0; i < nbrOfSockets; i++) {
-				if (isConnected[i]) {
-					outputStream[i].write(bytes1, 0, 4);
-					outputStream[i].flush();
-				}
-			}
-			movieMode = true;
-			break;
-	
-		case IDLE_MODE:
-			byte[] bytes2 = ByteBuffer.allocate(4).putInt(command, 0).array();
-			for (int i = 0; i < nbrOfSockets; i++) {
-				if (isConnected[i]) {
-					outputStream[i].write(bytes2, 0, 4);
-					outputStream[i].flush();
-				}
-			}
-			movieMode = false;
-			break;
-		}
-		notifyAll();
-	}
-
-	public synchronized void putCommandToClientWriter(int serverIndex, int command) {
+	public synchronized void putCommandToClientWriter(int serverIndex,
+			int command) {
 		if (serverIndex == 0) {
 			writerBufferServer1.putCommandToBuffer(command);
 		} else {
@@ -355,7 +192,7 @@ public class ClientMonitor {
 		notifyAll();
 	}
 
-	private synchronized void putCommandToUpdaterBuffer(int com) {
+	public synchronized void putCommandToUpdaterBuffer(int com) {
 		updaterBuffer.putCommandToBuffer(com);
 		notifyAll();
 	}
@@ -369,13 +206,13 @@ public class ClientMonitor {
 			}
 		}
 		int com = updaterBuffer.getCommandFromBuffer();
-//		finishedUpdating = true;
+		// finishedUpdating = true;
 		System.out.println("finished updating GUI");
 		notifyAll();
 		return com;
 	}
 
-	private synchronized void putImageToBuffer(Image image, int serverIndex) {
+	public synchronized void putImageToBuffer(Image image, int serverIndex) {
 		if (serverIndex == 0) {
 			imageBufferServer1.putImageToBuffer(image);
 		} else if (serverIndex == 1) {
@@ -403,60 +240,14 @@ public class ClientMonitor {
 			}
 		} else {// If server 2 was checked first last time
 
-			if (imageBufferServer1.getNbrOfImagesInBuffer()> 0) {
+			if (imageBufferServer1.getNbrOfImagesInBuffer() > 0) {
 				image = imageBufferServer1.getImageFromBuffer();
 			} else {
 				image = imageBufferServer2.getImageFromBuffer();
 			}
 		}
-//		finishedUpdating = true;
 		notifyAll();
 		return image;
-	}
-
-	private synchronized byte[] readByteArray(int serverIndex, int size) {
-		byte[] temp = new byte[size];
-		int bytesLeft = size;
-		int tempIndex = 0;
-		while (bytesLeft > 0) {
-			// läs en byte
-			int read;
-			try {
-				read = inputStream[serverIndex].read();
-				// lägg i byteToInt
-				// TODO Kolla read fallet -1
-				temp[tempIndex] = (byte) read;
-				tempIndex++;
-				bytesLeft--;
-			} catch (IOException e) {
-				System.out.println("error in readint method client side" + e);
-				e.printStackTrace();
-			}
-		}
-		return temp;
-	}
-
-	private synchronized int readInt(int serverIndex) {
-		System.out.println("Reading ints");
-		byte[] temp = new byte[4];
-
-		// läs en byte
-		int k = 0;
-		try {
-			System.out.println("groda");
-			k = inputStream[serverIndex].read(temp, 0, 4);
-
-		} catch (IOException e) {
-			System.out.println("error in readint method client side" + e);
-			e.printStackTrace();
-		}
-		System.out.println("hej");
-		if (k == 4) {
-			System.out.println("4 byte lästes in till temp");
-		}
-		// Konvertera till int
-		ByteBuffer bb = ByteBuffer.wrap(temp);
-		return bb.getInt(0);
 	}
 
 	/**
@@ -485,27 +276,77 @@ public class ClientMonitor {
 		}
 	}
 
-	public synchronized void somethingOnStream(int serverIndex)
-			throws IOException, InterruptedException {
-		// TODO controll that this is corectly implemented
-		while (!isConnected[serverIndex]) {
-			wait();
-		}
-		if (inputStream[serverIndex].available() > 0) {
-			System.out
-					.println("trueie****************************************************************");
-			somethingOnStream[serverIndex] = true;
-			// notifyAll();
-		} else {
-			// System.out.println("falsie");
-			somethingOnStream[serverIndex] = false;
-			// notifyAll();
-		}
-	}
-
 	public synchronized long SyncMode(Image imageC1, Image imageC2) {
 
 		return 0;
+	}
+
+	public synchronized void waitForConnection(int serverIndex)
+			throws InterruptedException {
+		while (!isConnected[serverIndex]) {
+			wait();
+		}
+
+	}
+
+	public synchronized InputStream getInputStream(int serverIndex) {
+		return inputStream[serverIndex];
+	}
+
+	public synchronized boolean isConnected(int serverIndex) {
+		return isConnected[serverIndex];
+	}
+
+	public synchronized void setNewImage(boolean b) {
+		newImage = b;
+		notifyAll();
+	}
+
+	public synchronized void setUpdateGUI(boolean b) {
+		updateGUI = b;
+		notifyAll();
+	}
+
+	public synchronized int[] waitForWriterInput() throws InterruptedException {
+		while (writerBufferServer1.getNbrOfCommandsInBuffer() <= 0
+				&& writerBufferServer2.getNbrOfCommandsInBuffer() <= 0) {
+				wait();
+		}
+		
+		int command;
+		int serverIndex;
+		if (server1LastTime) {// If server 1 was checked first last time
+			server1LastTime = !server1LastTime;
+			if (writerBufferServer2.getNbrOfCommandsInBuffer() > 0) {
+				serverIndex = 1;
+				command = writerBufferServer2.getCommandFromBuffer();
+			} else {
+				serverIndex = 0;
+				command = writerBufferServer1.getCommandFromBuffer();
+			}
+		} else {// If server 2 was checked first last time
+
+			if (writerBufferServer1.getNbrOfCommandsInBuffer() > 0) {
+				serverIndex = 0;
+				command = writerBufferServer1.getCommandFromBuffer();
+			} else {
+				serverIndex = 1;
+				command = writerBufferServer2.getCommandFromBuffer();
+			}
+		}
+		int[] temp = {command, serverIndex};
+		return temp;
+	}
+
+
+
+	public synchronized OutputStream[] getOutPutStreams() {
+		return outputStream;
+	}
+
+	public synchronized void setMovieMode(boolean b) {
+		movieMode = b;
+		notifyAll();
 	}
 
 }
