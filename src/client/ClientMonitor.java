@@ -10,11 +10,6 @@ import java.nio.ByteBuffer;
 public class ClientMonitor {
 
 	/**
-	 * Attributes for change of modes
-	 */
-	private boolean syncMode;
-	private boolean movieMode;
-	/**
 	 * Attributes for updating GUI
 	 */
 	private boolean updateGUI;
@@ -22,7 +17,6 @@ public class ClientMonitor {
 								// in data
 	private boolean newMode; // The updater checks if a new mode has arrived in
 								// data
-	private boolean finishedUpdating;
 	/**
 	 * Attributes for connecting
 	 */
@@ -31,7 +25,6 @@ public class ClientMonitor {
 	private boolean[] isConnected;
 	private InputStream[] inputStream;
 	private OutputStream[] outputStream;
-	private int nbrOfSockets;
 	/**
 	 * Header attributes
 	 */
@@ -93,16 +86,13 @@ public class ClientMonitor {
 		inputStream = new InputStream[nbrOfSockets];
 		outputStream = new OutputStream[nbrOfSockets];
 		somethingOnStream = new boolean[nbrOfSockets];
-		this.nbrOfSockets = nbrOfSockets;
+
 		writerBufferServer1 = new CommandBuffer(COMMAND_BUFFER_SIZE);
 		writerBufferServer2 = new CommandBuffer(COMMAND_BUFFER_SIZE);
 		updaterBuffer = new CommandBuffer(COMMAND_BUFFER_SIZE);
 		imageBufferServer1 = new ImageBuffer(IMAGE_BUFFER_SIZE);
 		imageBufferServer2 = new ImageBuffer(IMAGE_BUFFER_SIZE);
 		updateGUI = false;
-		finishedUpdating = true;
-		syncMode = false;
-		movieMode = false;
 		imageS1LastTime = false;
 	}
 
@@ -310,13 +300,13 @@ public class ClientMonitor {
 	public synchronized int[] waitForWriterInput() throws InterruptedException {
 		while (writerBufferServer1.getNbrOfCommandsInBuffer() <= 0
 				&& writerBufferServer2.getNbrOfCommandsInBuffer() <= 0) {
-				wait();
+			wait();
 		}
-		
+		System.out
+				.println("got something in one of the buffers, not sure yet what");
 		int command;
 		int serverIndex;
 		if (server1LastTime) {// If server 1 was checked first last time
-			server1LastTime = !server1LastTime;
 			if (writerBufferServer2.getNbrOfCommandsInBuffer() > 0) {
 				serverIndex = 1;
 				command = writerBufferServer2.getCommandFromBuffer();
@@ -334,18 +324,17 @@ public class ClientMonitor {
 				command = writerBufferServer2.getCommandFromBuffer();
 			}
 		}
-		int[] temp = {command, serverIndex};
+		server1LastTime = !server1LastTime;
+		int[] temp = { command, serverIndex };
 		return temp;
 	}
-
-
 
 	public synchronized OutputStream[] getOutPutStreams() {
 		return outputStream;
 	}
 
-	public synchronized void setMovieMode(boolean b) {
-		movieMode = b;
+	public synchronized void setNewCommand(boolean b) {
+		newMode = b;
 		notifyAll();
 	}
 
