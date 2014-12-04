@@ -53,13 +53,7 @@ public class ClientMonitor {
 	/**
 	 * Attributes for handling images
 	 */
-	private Image[] imageBuffer; // An image ring buffer containing 125 Images
-
-	private int putAt;
-	private int getAt;
-	private int nbrOfImgsInBuffer;
-	private Image[][] cameraImages; // Contains one image buffer for each
-									// camera
+	private ImageBuffer imageBuffer; // An image ring buffer containing 125 Images
 
 	/**
 	 * Attributes for handling commands in updater
@@ -99,12 +93,11 @@ public class ClientMonitor {
 		writerBufferServer1 = new CommandBuffer(COMMAND_BUFFER_SIZE);
 		writerBufferServer2 = new CommandBuffer(COMMAND_BUFFER_SIZE);
 		updaterBuffer = new CommandBuffer(COMMAND_BUFFER_SIZE);
-		imageBuffer = new Image[IMAGE_BUFFER_SIZE];
+		imageBuffer = new ImageBuffer(IMAGE_BUFFER_SIZE);
 		updateGUI = false;
 		finishedUpdating = true;
 		syncMode = false;
 		movieMode = false;
-		getAt = putAt = nbrOfImgsInBuffer = 0;
 	}
 	
 	/**
@@ -137,7 +130,12 @@ public class ClientMonitor {
 				outputStream[serverIndex] = socket[serverIndex]
 						.getOutputStream();
 				isConnected[serverIndex] = true;
-				resetAttributes();
+				if(serverIndex == 0){
+					writerBufferServer1 = new CommandBuffer(COMMAND_BUFFER_SIZE);
+				}else{
+					writerBufferServer2 = new CommandBuffer(COMMAND_BUFFER_SIZE);
+					
+				}
 				notifyAll();
 				System.out.println("Server connection with server "
 						+ serverIndex + " established");
@@ -168,7 +166,6 @@ public class ClientMonitor {
 			try {
 				socket[serverIndex].close();
 				isConnected[serverIndex] = false;
-				resetAttributes();
 				notifyAll();
 				System.out.println("Disconnected to server" + serverIndex
 						+ " successfully");
@@ -420,32 +417,19 @@ public class ClientMonitor {
 	}
 
 	private synchronized void putImageToBuffer(Image image) {
-		System.out.println("putting image in buffer");
-		imageBuffer[putAt] = image;
-		putAt++;
-		nbrOfImgsInBuffer++;
-		if (putAt >= 125) {
-			putAt = 0;
-		}
+		imageBuffer.putImageToBuffer(image);
 		notifyAll();
 	}
 
 	public synchronized Image getImageFromBuffer() {
-		while (nbrOfImgsInBuffer <= 0) {
+		while (imageBuffer.getNbrOfImagesInBuffer() <= 0) {
 			try {
 				wait();
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
-		System.out.println("collecting an image");
-		Image image = imageBuffer[getAt];
-		getAt++;
-		nbrOfImgsInBuffer--;
-		if (getAt >= 125) {
-			getAt = 0;
-		}
+		Image image = imageBuffer.getImageFromBuffer();
 		finishedUpdating = true;
 		notifyAll();
 		return image;
