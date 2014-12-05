@@ -28,7 +28,7 @@ public class ServerMonitor {
 			+ AxisM3006V.TIME_ARRAY_SIZE + 4 * 3;
 	public static int MESSAGE_SIZE = 4;
 
-	public ServerMonitor(int port, int serverNbr) {
+	public ServerMonitor(int serverNbr) {
 		this.serverNbr = serverNbr;
 		movieMode = isConnected = inputStreamIsSet = false;
 		lastTimeSentImg = System.currentTimeMillis();

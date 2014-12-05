@@ -107,6 +107,7 @@ public class ClientMonitor {
 			// Server must be running before trying to connect
 			String host = socketAddress[serverIndex].getHost();
 			int port = socketAddress[serverIndex].getPortNumber();
+			System.out.println(host + " is host and port is " + port);
 			try {
 				socket[serverIndex] = new Socket(host, port);
 				// Set socket to no send delay
@@ -294,6 +295,7 @@ public class ClientMonitor {
 		}
 		server1LastTime = !server1LastTime;
 		int[] temp = { command, serverIndex };
+		System.out.println(command + "is command an next is servindex" + serverIndex);
 		return temp;
 	}
 

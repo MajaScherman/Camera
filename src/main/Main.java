@@ -1,7 +1,8 @@
 package main;
 
 import gui.GUI;
-import se.lth.cs.eda040.fakecamera.AxisM3006V;
+import se.lth.cs.eda040.proxycamera.AxisM3006V;
+//import se.lth.cs.eda040.fakecamera.AxisM3006V;
 import server.ServerMonitor;
 import server.ServerReader;
 import server.ServerWriter;
@@ -18,26 +19,26 @@ public class Main {
 		 */
 
 		AxisM3006V camera1 = new AxisM3006V();
-		ServerMonitor serverMon1 = new ServerMonitor(7897, 0);
+		ServerMonitor serverMon1 = new ServerMonitor(0);
 		ServerReader serverReader1 = new ServerReader(serverMon1);
-		ServerWriter serverWriter1 = new ServerWriter(serverMon1, "localhost",
-				7897, camera1);
+		ServerWriter serverWriter1 = new ServerWriter(serverMon1,
+				"argus-5.student.lth.se", 8080, camera1, 5555);
 		serverWriter1.start();
 		serverReader1.start();
 
 		AxisM3006V camera2 = new AxisM3006V();
-		ServerMonitor serverMon2 = new ServerMonitor(7898, 1);
+		ServerMonitor serverMon2 = new ServerMonitor(1);
 		ServerReader serverReader2 = new ServerReader(serverMon2);
-		ServerWriter serverWriter2 = new ServerWriter(serverMon2, "localhost",
-				7898, camera2);
+		ServerWriter serverWriter2 = new ServerWriter(serverMon2,
+				"argus-6.student.lth.se", 8181, camera2, 6666);
 		serverWriter2.start();
 		serverReader2.start();
 
 		/**
 		 * Start up the client
 		 */
-		SocketAddress adr1 = new SocketAddress("localhost", 7897);
-		SocketAddress adr2 = new SocketAddress("localhost", 7898);
+		SocketAddress adr1 = new SocketAddress("localhost", 5555);
+		SocketAddress adr2 = new SocketAddress("localhost", 6666);
 		SocketAddress[] addresses = new SocketAddress[2];
 		addresses[0] = adr1;
 		addresses[1] = adr2;
