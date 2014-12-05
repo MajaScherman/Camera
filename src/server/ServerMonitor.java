@@ -5,7 +5,6 @@ import java.net.SocketException;
 import java.nio.ByteBuffer;
 
 import se.lth.cs.eda040.fakecamera.AxisM3006V; //For constants
-import client.ClientMonitor;
 
 public class ServerMonitor {
 	/**
@@ -16,6 +15,15 @@ public class ServerMonitor {
 	private boolean isConnected;
 	private int serverNbr;
 	private boolean inputStreamIsSet;
+	private boolean forcedMode;
+
+	public static final int CLOSE_CONNECTION = 0;
+	public static final int MOVIE_MODE = 2;
+	public static final int IDLE_MODE = 3;
+	public static final int IMAGE = 0;
+	public static final int COMMAND = 1;
+	public static final int AUTO = 6;
+	public static final int FORCED = 7;
 
 	/**
 	 * Attributes for commands
@@ -30,7 +38,7 @@ public class ServerMonitor {
 
 	public ServerMonitor(int serverNbr) {
 		this.serverNbr = serverNbr;
-		movieMode = isConnected = inputStreamIsSet = false;
+		movieMode = isConnected = inputStreamIsSet = forcedMode = false;
 		lastTimeSentImg = System.currentTimeMillis();
 
 	}
@@ -50,7 +58,8 @@ public class ServerMonitor {
 		}
 	}
 
-	public synchronized InputStream getInputStream() throws InterruptedException {
+	public synchronized InputStream getInputStream()
+			throws InterruptedException {
 		while (!inputStreamIsSet) {
 			wait();
 		}
@@ -74,14 +83,20 @@ public class ServerMonitor {
 	 */
 	public synchronized void runCommand(int command) throws SocketException {
 		switch (command) {
-		case ClientMonitor.CLOSE_CONNECTION:
+		case CLOSE_CONNECTION:
 			setConnectionClosed();
 			break;
-		case ClientMonitor.MOVIE_MODE:
+		case MOVIE_MODE:
 			movieMode = true;
 			break;
-		case ClientMonitor.IDLE_MODE:
+		case IDLE_MODE:
 			movieMode = false;
+			break;
+		case FORCED:
+			forcedMode = true;
+			break;
+		case AUTO:
+			forcedMode = false;
 			break;
 		default:
 			System.out.println("Invalid command sent to server from client");
@@ -91,8 +106,17 @@ public class ServerMonitor {
 	}
 
 	public synchronized boolean isReadyToSendImage() {
-		long diff = System.currentTimeMillis() - lastTimeSentImg;
-		return (((diff >= 5000) || movieMode)); //  && isConnected
+		if (forcedMode) {
+			if (movieMode) {
+				return true;
+			} else {
+				long diff = System.currentTimeMillis() - lastTimeSentImg;
+				return (diff >= 5000);
+			}
+		} else {
+			long diff = System.currentTimeMillis() - lastTimeSentImg;
+			return (((diff >= 5000) || movieMode)); // && isConnected
+		}
 	}
 
 	public synchronized void waitForConnection() throws InterruptedException {
@@ -115,7 +139,7 @@ public class ServerMonitor {
 			byte[] image) {
 		ByteBuffer bb = ByteBuffer.allocate(12 + AxisM3006V.TIME_ARRAY_SIZE
 				+ length);
-		bb.putInt(ClientMonitor.IMAGE);
+		bb.putInt(IMAGE);
 		bb.putInt(length);
 		bb.putInt(serverNbr);// 4 bytes for every int
 		bb.put(time);

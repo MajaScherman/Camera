@@ -15,7 +15,9 @@ public class ClientMonitor {
 	private boolean newImage; // The updater checks if a new image has arrived
 								// in data
 	private boolean newMode; // The updater checks if a new mode has arrived in
-								// data
+	private boolean forceMode;							// data
+	private int syncMode;
+	private boolean movieMode;
 	/**
 	 * Attributes for connecting
 	 */
@@ -38,6 +40,8 @@ public class ClientMonitor {
 	public static final int IDLE_MODE = 3;
 	public static final int ASYNCHRONIZED = 4;
 	public static final int SYNCHRONIZED = 5;
+	public static final int AUTO = 6;
+	public static final int FORCED = 7;
 
 	/**
 	 * Attributes for handling images
@@ -69,6 +73,7 @@ public class ClientMonitor {
 	// video in 25 fps
 	public static final int NUMBER_OF_CAMERAS = 2;
 
+
 	public ClientMonitor(int nbrOfSockets) {
 		isConnected = new boolean[nbrOfSockets];
 
@@ -81,6 +86,7 @@ public class ClientMonitor {
 		imageBufferServer2 = new ImageBuffer(IMAGE_BUFFER_SIZE);
 		updateGUI = false;
 		imageS1LastTime = false;
+		syncMode = 0;
 	}
 
 
@@ -166,16 +172,16 @@ public class ClientMonitor {
 			}
 		}
 		updateGUI = false;
-		notifyAll();
-		if (newImage) {
-			newImage = false;
-			notifyAll();
-			return IMAGE;
-		} else if (newMode) {
+		if (newMode) {
 			newMode = false;
 			notifyAll();
 			return COMMAND;
-		} else {
+		}else if (newImage) {
+			newImage = false;
+			notifyAll();
+			return IMAGE;
+		}else {
+			notifyAll();
 			throw new Exception("Check update method is wrong");
 		}
 	}
@@ -269,6 +275,39 @@ public class ClientMonitor {
 		notifyAll();
 		
 	}
+
+
+	public synchronized int getSyncMode() {
+		
+		return syncMode;
+	}
+
+
+	public synchronized void setSyncMode(int mode) {
+		syncMode = mode;
+		notifyAll();
+		
+	}
+
+
+	public synchronized boolean getForceMode() {
+		return forceMode;
+	}
+
+
+	public synchronized void setForceMode(boolean b) {
+		forceMode = b;
+		notifyAll();
+	}
+
+
+	public synchronized boolean getMovieMode() {
+		return movieMode;
+	}
 	
+	public synchronized void setMovieMode(boolean mode){
+		movieMode = mode;
+		notifyAll();
+	}
 
 }

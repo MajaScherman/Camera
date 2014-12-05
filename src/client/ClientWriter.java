@@ -71,6 +71,28 @@ public class ClientWriter extends Thread {
 						}
 					}
 					break;
+				case ClientMonitor.AUTO:
+					byte[] bytes3 = ByteBuffer.allocate(4).putInt(0, command)
+							.array();
+					for (int i = 0; i < 2; i++) {
+						if (mon.isConnected(i)) {
+
+							os[i].write(bytes3, 0, 4);
+							os[i].flush();
+						}
+					}
+					break;
+				case ClientMonitor.FORCED:
+					byte[] bytes4 = ByteBuffer.allocate(4).putInt(0, command)
+							.array();
+					for (int i = 0; i < 2; i++) {
+						if (mon.isConnected(i)) {
+
+							os[i].write(bytes4, 0, 4);
+							os[i].flush();
+						}
+					}
+					break;
 				default:
 					System.out
 							.println("Got an unexpected command in client writer");
@@ -107,7 +129,7 @@ public class ClientWriter extends Thread {
 				// Get input stream
 				inputStream[serverIndex] = socket[serverIndex].getInputStream();
 				// Get output stream
-				mon.setInputStream(inputStream[serverIndex],serverIndex);
+				mon.setInputStream(inputStream[serverIndex], serverIndex);
 				os[serverIndex] = socket[serverIndex].getOutputStream();
 				mon.setIsConnected(serverIndex, true);
 				mon.createServerCommandBuffer(serverIndex);

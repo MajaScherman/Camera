@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 
 import se.lth.cs.eda040.proxycamera.AxisM3006V;
 //import se.lth.cs.eda040.fakecamera.AxisM3006V;
-import client.ClientMonitor;
+
 
 public class ServerWriter extends Thread {
 	private AxisM3006V camera;
@@ -21,13 +21,15 @@ public class ServerWriter extends Thread {
 	private Socket clientSocket;
 	private ServerSocket serverSocket;
 	private InputStream is;
+	private int offset;
 
 
 	@SuppressWarnings("static-access")
 	public ServerWriter(ServerMonitor mon, String hostAddress, int camPort,
-			AxisM3006V camera,int clientPort) {
+			AxisM3006V camera,int clientPort, int offset) {
 		this.mon = mon;
 		this.camera = camera;
+		this.offset = offset;
 		camera.init();
 		camera.setProxy(hostAddress, camPort);
 		camera.connect();
@@ -58,13 +60,19 @@ public class ServerWriter extends Thread {
 					if (camera.motionDetected()) {
 						mon.setMovieMode(true);
 						ByteBuffer bb = ByteBuffer.allocate(8);
-						bb.putInt(0,ClientMonitor.COMMAND);
-						bb.putInt(4,ClientMonitor.MOVIE_MODE);
+						bb.putInt(0,ServerMonitor.COMMAND);
+						bb.putInt(4,ServerMonitor.MOVIE_MODE);
 						os.write(bb.array(), 0, 8);
 						os.flush();
 
 					}
 					if (mon.isReadyToSendImage()) {
+						try {
+							sleep(offset);
+						} catch (InterruptedException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
 						int length = camera.getJPEG(image, 0);
 						camera.getTime(time, 0);
 						if (length > 0) {

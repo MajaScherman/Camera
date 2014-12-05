@@ -22,7 +22,7 @@ public class Main {
 		ServerMonitor serverMon1 = new ServerMonitor(0);
 		ServerReader serverReader1 = new ServerReader(serverMon1);
 		ServerWriter serverWriter1 = new ServerWriter(serverMon1,
-				"argus-5.student.lth.se", 8080, camera1, 5555);
+				"argus-5.student.lth.se", 8080, camera1, 5555,0);//last para is offset
 		serverWriter1.start();
 		serverReader1.start();
 
@@ -30,7 +30,7 @@ public class Main {
 		ServerMonitor serverMon2 = new ServerMonitor(1);
 		ServerReader serverReader2 = new ServerReader(serverMon2);
 		ServerWriter serverWriter2 = new ServerWriter(serverMon2,
-				"argus-6.student.lth.se", 8181, camera2, 6666);
+				"argus-3.student.lth.se", 8181, camera2, 6666,500);
 		serverWriter2.start();
 		serverReader2.start();
 
