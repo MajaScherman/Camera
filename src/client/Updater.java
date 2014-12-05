@@ -22,7 +22,11 @@ public class Updater extends Thread {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			if (type == ClientMonitor.IMAGE) {
+			if (type == ClientMonitor.COMMAND) {
+				int command = mon.getCommandFromUpdaterBuffer();
+				gui.sendCommandToInfoPanel(command);
+
+			}else if (type == ClientMonitor.IMAGE) {
 				boolean onlyOne = mon.isOnlyOneImage();
 				if (onlyOne) {
 					Image image = mon.getImageFromBuffer();
@@ -71,10 +75,6 @@ public class Updater extends Thread {
 				} else {
 					gui.sendCommandToInfoPanel(ClientMonitor.ASYNCHRONIZED);
 				}
-			} else if (type == ClientMonitor.COMMAND) {
-				int command = mon.getCommandFromUpdaterBuffer();
-				gui.sendCommandToInfoPanel(command);
-
 			}
 		}
 	}

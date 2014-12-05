@@ -19,11 +19,9 @@ public class ClientMonitor {
 	/**
 	 * Attributes for connecting
 	 */
-	private Socket[] socket;
-	private SocketAddress[] socketAddress;
 	private boolean[] isConnected;
+
 	private InputStream[] inputStream;
-	private OutputStream[] outputStream;
 	/**
 	 * Header attributes
 	 */
@@ -71,12 +69,10 @@ public class ClientMonitor {
 	// video in 25 fps
 	public static final int NUMBER_OF_CAMERAS = 2;
 
-	public ClientMonitor(int nbrOfSockets, SocketAddress[] socketAddr) {
-		socketAddress = socketAddr;
-		socket = new Socket[nbrOfSockets];
+	public ClientMonitor(int nbrOfSockets) {
 		isConnected = new boolean[nbrOfSockets];
+
 		inputStream = new InputStream[nbrOfSockets];
-		outputStream = new OutputStream[nbrOfSockets];
 
 		writerBufferServer1 = new CommandBuffer(COMMAND_BUFFER_SIZE);
 		writerBufferServer2 = new CommandBuffer(COMMAND_BUFFER_SIZE);
@@ -87,82 +83,6 @@ public class ClientMonitor {
 		imageS1LastTime = false;
 	}
 
-	/**
-	 * Establishes connection to server
-	 * 
-	 * @param serverIndex
-	 *            the index of the server we want to connect to (start from
-	 *            index 0 and goes up to socketArray.length)
-	 */
-	public synchronized void connectToServer(int serverIndex) {
-		if (!(serverIndex >= 0 && serverIndex < socket.length)) {
-			// TODO Throw exception
-			System.out.println("The server index is out of range, "
-					+ "please give a value between 0 and " + socket.length
-					+ (-1));
-		} else if (isConnected[serverIndex]) {
-			System.out.println("The server is already connected");
-		} else {
-			// Establish connection
-			// Server must be running before trying to connect
-			String host = socketAddress[serverIndex].getHost();
-			int port = socketAddress[serverIndex].getPortNumber();
-			System.out.println(host + " is host and port is " + port);
-			try {
-				socket[serverIndex] = new Socket(host, port);
-				// Set socket to no send delay
-				socket[serverIndex].setTcpNoDelay(true);
-				// Get input stream
-				inputStream[serverIndex] = socket[serverIndex].getInputStream();
-				// Get output stream
-				outputStream[serverIndex] = socket[serverIndex]
-						.getOutputStream();
-				isConnected[serverIndex] = true;
-
-				if (serverIndex == 0) {
-					writerBufferServer1 = new CommandBuffer(COMMAND_BUFFER_SIZE);
-				} else {
-					writerBufferServer2 = new CommandBuffer(COMMAND_BUFFER_SIZE);
-
-				}
-				notifyAll();
-				System.out.println("Server connection with server "
-						+ serverIndex + " established");
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	/**
-	 * Disconnects to the server
-	 * 
-	 * @param serverIndex
-	 *            the index of the server one wants to disconnect to
-	 */
-	public synchronized void disconnectToServer(int serverIndex) {
-		if (!(serverIndex >= 0 && serverIndex < socket.length)) {
-			// TODO Throw exception
-			System.out.println("The server index is out of range, "
-					+ "please give a value between 0 and " + socket.length);
-		} else if (!isConnected[serverIndex]) {
-			System.out.println("The server with index " + serverIndex
-					+ " is not connected");
-		} else {
-			// Close the socket, i.e. abort the connection
-			try {
-				socket[serverIndex].close();
-				isConnected[serverIndex] = false;
-				notifyAll();
-				System.out.println("Disconnected to server" + serverIndex
-						+ " successfully");
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
 
 	public synchronized void waitForConnection(int serverIndex)
 			throws InterruptedException {
@@ -295,13 +215,10 @@ public class ClientMonitor {
 		}
 		server1LastTime = !server1LastTime;
 		int[] temp = { command, serverIndex };
-		System.out.println(command + "is command an next is servindex" + serverIndex);
 		return temp;
 	}
 
-	public synchronized OutputStream[] getOutPutStreams() {
-		return outputStream;
-	}
+	
 
 	public synchronized void setNewImage(boolean b) {
 		newImage = b;
@@ -330,5 +247,28 @@ public class ClientMonitor {
 		images[1] = imageBufferServer2.getImageFromBuffer();
 		return images;
 	}
+
+	public synchronized void setIsConnected(int serverIndex, boolean status) {
+		isConnected[serverIndex] = status;
+		notifyAll();
+	}
+
+	public synchronized void createServerCommandBuffer(int serverIndex) {
+		if (serverIndex == 0) {
+			writerBufferServer1 = new CommandBuffer(COMMAND_BUFFER_SIZE);
+		} else {
+			writerBufferServer2 = new CommandBuffer(COMMAND_BUFFER_SIZE);
+
+		}
+		notifyAll();
+	}
+
+
+	public synchronized void setInputStream(InputStream is, int serverIndex) {
+		inputStream[serverIndex] = is;
+		notifyAll();
+		
+	}
+	
 
 }

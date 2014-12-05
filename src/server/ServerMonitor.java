@@ -92,7 +92,7 @@ public class ServerMonitor {
 
 	public synchronized boolean isReadyToSendImage() {
 		long diff = System.currentTimeMillis() - lastTimeSentImg;
-		return (((diff >= 0) || movieMode)); //  && isConnected
+		return (((diff >= 5000) || movieMode)); //  && isConnected
 	}
 
 	public synchronized void waitForConnection() throws InterruptedException {

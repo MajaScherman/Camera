@@ -8,7 +8,6 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 
-
 import se.lth.cs.eda040.proxycamera.AxisM3006V;
 //import se.lth.cs.eda040.fakecamera.AxisM3006V;
 import client.ClientMonitor;
@@ -22,19 +21,17 @@ public class ServerWriter extends Thread {
 	private Socket clientSocket;
 	private ServerSocket serverSocket;
 	private InputStream is;
-	private String hostAddr;
-	private int portNbr;
+
 
 	@SuppressWarnings("static-access")
 	public ServerWriter(ServerMonitor mon, String hostAddress, int camPort,
 			AxisM3006V camera,int clientPort) {
 		this.mon = mon;
 		this.camera = camera;
-//		camera.init();
-//		camera.setProxy(hostAddress, port);
-//		camera.connect();
-		hostAddr = hostAddress;
-		portNbr = camPort;
+		camera.init();
+		camera.setProxy(hostAddress, camPort);
+		camera.connect();
+
 		image = new byte[camera.IMAGE_BUFFER_SIZE];
 		time = new byte[camera.TIME_ARRAY_SIZE];
 
@@ -48,9 +45,6 @@ public class ServerWriter extends Thread {
 	}
 
 	public void run() {
-		camera.init();
-		camera.setProxy(hostAddr, portNbr);
-		camera.connect();
 		while (!isInterrupted()) {
 			try {
 				clientSocket = serverSocket.accept();
@@ -97,7 +91,6 @@ public class ServerWriter extends Thread {
 				}
 				clientSocket.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
