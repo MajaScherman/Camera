@@ -23,14 +23,7 @@ public class ImageViewer extends JPanel {
 		icon = new ImageIcon();
 		imageIcon = new JLabel(icon);
 		this.setSize(200, 200);
-		
-		
-
-
-
 		add(imageIcon);
-		
-
 	}
 
 	public void refresh(byte[] data) {

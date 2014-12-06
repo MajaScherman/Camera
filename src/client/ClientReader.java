@@ -36,25 +36,25 @@ public class ClientReader extends Thread {
 			try {
 				while (mon.isConnected(serverIndex)) {
 
-					int type = readInt(serverIndex);
-					if (type == mon.IMAGE) {
+					int type = readInt(serverIndex);//blocks here if no data
+					if (type == ClientMonitor.IMAGE) {
 						int size = readInt(serverIndex);
 						int cameraNumber = readInt(serverIndex);
 
 						byte[] temp = readByteArray(serverIndex, 8);
 						ByteBuffer bb = ByteBuffer.wrap(temp);
 						long timeStamp = bb.getLong();
-						long delay = System.currentTimeMillis() - timeStamp;
+						long delay = System.currentTimeMillis() - timeStamp;//TODO do not place delay here!!!!!!!!!!!!!
 						Image image = new Image(cameraNumber, timeStamp, delay,
 								readByteArray(serverIndex, size));
 
 						mon.setNewImage(true);
 						mon.setUpdateGUI(true);
 
-						mon.putImageToBuffer(image, serverIndex);
-					} else if (type == mon.COMMAND) {
+						mon.putImageToBuffer(image, serverIndex);//TODO the picture is freezing up, could it be here
+					} else if (type == ClientMonitor.COMMAND) {
 						int commandData = readInt(serverIndex);
-						if (commandData != mon.MOVIE_MODE) {
+						if (commandData != ClientMonitor.MOVIE_MODE) {
 							System.out
 									.println("Client have recieved an invalid command");
 
@@ -62,11 +62,11 @@ public class ClientReader extends Thread {
 						mon.setNewCommand(true);
 						mon.setUpdateGUI(true);
 
-						mon.putCommandToUpdaterBuffer(commandData);
+						mon.putCommandToUpdaterBuffer(commandData);//TODO the picture is freezing up, could it be here
 						mon.putCommandToClientWriter(1 - serverIndex,
 								commandData);
 					} else {
-						System.out.println("You got a non existing type :D");
+						System.out.println("You got a non existing type :D, you should be so happy yay :D");
 					}
 				}
 			} catch (SocketException e) {
@@ -75,6 +75,8 @@ public class ClientReader extends Thread {
 				} catch (InterruptedException e1) {
 					e1.printStackTrace();
 				}
+			}catch(Exception e){
+				e.printStackTrace();		
 			}
 		}
 	}
@@ -89,7 +91,6 @@ public class ClientReader extends Thread {
 			try {
 				status = is.read(message, bytesRead, bytesLeft);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 				System.out
 						.println("got ioexception when reading byte array in client reader");
@@ -105,6 +106,7 @@ public class ClientReader extends Thread {
 		return message;
 	}
 
+	
 	private int readInt(int serverIndex) throws SocketException {
 		byte[] temp = new byte[4];
 		int readBytes = 0;
@@ -120,7 +122,6 @@ public class ClientReader extends Thread {
 		if (readBytes != 4) {
 			System.out.println("Too few bytes were read by client reader");
 		}
-		// Konvertera till int
 		ByteBuffer bb = ByteBuffer.wrap(temp);
 		return bb.getInt(0);
 	}

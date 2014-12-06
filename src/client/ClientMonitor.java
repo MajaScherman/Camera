@@ -117,11 +117,13 @@ public class ClientMonitor {
 		return com;
 	}
 
-	public synchronized void putImageToBuffer(Image image, int serverIndex) {
+	public synchronized void putImageToBuffer(Image image, int serverIndex) throws Exception {
 		if (serverIndex == 0) {
 			imageBufferServer1.putImageToBuffer(image);
 		} else if (serverIndex == 1) {
 			imageBufferServer2.putImageToBuffer(image);
+		}else{
+			throw new Exception("you cant put a Image to a buffer that dont exist, give putImageToBuffer a valid serverIndex");
 		}
 		notifyAll();
 	}
@@ -153,11 +155,6 @@ public class ClientMonitor {
 		}
 		notifyAll();
 		return image;
-	}
-
-	public synchronized long SyncMode(Image imageC1, Image imageC2) {
-
-		return 0;
 	}
 
 	/**

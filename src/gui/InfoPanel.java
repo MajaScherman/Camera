@@ -12,30 +12,30 @@ import javax.swing.border.TitledBorder;
 
 public class InfoPanel extends JPanel {
 
-	private JLabel label2, label3, label4, delay1, delay2;
+	private JLabel label1, label2, label3, delay1, delay2;
 
 	private TitledBorder delay1Title, delay2Title;
 	public InfoPanel() {
 
 		Border blackline = BorderFactory.createLineBorder(Color.black);
 
-		label2 = new JLabel("Idle Mode");
+		label1 = new JLabel("Idle Mode");
+		label1.setBorder(blackline);
+		label1.setFont(label1.getFont().deriveFont(50f));
+		label1.setHorizontalAlignment(SwingConstants.CENTER);
+
+		label2 = new JLabel("Asyncronized");
 		label2.setBorder(blackline);
 		label2.setFont(label2.getFont().deriveFont(50f));
 		label2.setHorizontalAlignment(SwingConstants.CENTER);
-
-		label3 = new JLabel("Asyncronized");
+		
+		label3 = new JLabel("Auto Mode");
 		label3.setBorder(blackline);
 		label3.setFont(label3.getFont().deriveFont(50f));
 		label3.setHorizontalAlignment(SwingConstants.CENTER);
-		
-		label4 = new JLabel("Auto Mode");
-		label4.setBorder(blackline);
-		label4.setFont(label4.getFont().deriveFont(50f));
-		label4.setHorizontalAlignment(SwingConstants.CENTER);
 
 		delay1 = new JLabel("  ");
-		delay1.setFont(label3.getFont().deriveFont(50f));
+		delay1.setFont(label2.getFont().deriveFont(50f));
 		delay1.setHorizontalAlignment(SwingConstants.CENTER);
 		
 		delay1Title = BorderFactory.createTitledBorder(blackline, "CAMERA 1 DELAY");
@@ -43,7 +43,7 @@ public class InfoPanel extends JPanel {
 		delay1.setBorder(delay1Title);
 		
 		delay2 = new JLabel(" ");
-		delay2.setFont(label3.getFont().deriveFont(50f));
+		delay2.setFont(label2.getFont().deriveFont(50f));
 		delay2.setHorizontalAlignment(SwingConstants.CENTER);
 		
 		delay2Title = BorderFactory.createTitledBorder(blackline, "CAMERA 2 DELAY");
@@ -54,9 +54,9 @@ public class InfoPanel extends JPanel {
 		
 		add(delay1);
 		add(delay2);
+		add(label1);
 		add(label2);
 		add(label3);
-		add(label4);
 	}
 
 	public void setLabelText(int labelIndex, String text) {
@@ -71,14 +71,14 @@ public class InfoPanel extends JPanel {
 		case 1:
 			delay2.setText(text);
 			break;
-		case 2:
+		case 2: //the label on the top movie/idle
+			label1.setText(text);
+			break;
+		case 3://sync/async
 			label2.setText(text);
 			break;
-		case 3:
+		case 4://Forced/auto
 			label3.setText(text);
-			break;
-		case 4:
-			label4.setText(text);
 			break;
 		}
 	}

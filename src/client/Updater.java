@@ -39,7 +39,17 @@ public class Updater extends Thread {
 					gui.sendCommandToInfoPanel(command);
 					break;
 				}
+				// TODO kan vara realtidsfel med racing conditions
+				// vi använder för många monitor metoder här, så den kan låsa ut
+				// sig själv, testa med att hämta ut all nödvändig information
+				// en gång, dvs bara accessa monitorn en gång i början i
+				// whileloopen.
 
+				// TODO Delayen visas fel i monitorn, den tiden som ska visas är
+				// tiden från bildens timestamp tills att den är satt i gui't,
+				// inte som nu då vi har tiden från bilden är tagen tills den
+				// når clientReaderklassen och sparas i Imageklassen
+				
 			} else if (type == ClientMonitor.IMAGE) {
 				boolean onlyOne = mon.isOnlyOneImage();
 				if (onlyOne) {

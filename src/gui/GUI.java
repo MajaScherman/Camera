@@ -80,15 +80,14 @@ public class GUI extends JFrame {
 		}
 
 	}
-
 	public void sendCommandToInfoPanel(int command) {
 		switch (command) {
 		case ClientMonitor.MOVIE_MODE:		
-			infoPanel.setLabelText(3, "Movie Mode");
+			infoPanel.setLabelText(2, "Movie Mode");
 			buttonPanel.setButtonText(1, "IDLE MODE");
 			break;
 		case ClientMonitor.ASYNCHRONIZED:
-			infoPanel.setLabelText(2, "Asynchronized Mode");
+			infoPanel.setLabelText(3, "Asynchronized Mode");
 			buttonPanel.setButtonText(2, "SYNCHRONIZED MODE");
 
 			break;

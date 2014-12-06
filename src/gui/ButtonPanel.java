@@ -11,7 +11,6 @@ import client.ClientMonitor;
 public class ButtonPanel extends JPanel {
 	private JButton movie, connect1, connect2, sync, auto;
 	private ButtonHandler buttonHandler;
-	private InfoPanel infoPanel;
 	
 	public ButtonPanel(ClientMonitor mon, InfoPanel infoPanel) {
 		setLayout(new GridLayout(5, 1));

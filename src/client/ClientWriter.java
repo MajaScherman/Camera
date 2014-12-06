@@ -7,8 +7,6 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
-import main.Main;
-
 public class ClientWriter extends Thread {
 	private ClientMonitor mon;
 	private OutputStream[] os;
@@ -104,15 +102,17 @@ public class ClientWriter extends Thread {
 				System.out
 						.println("Got interrupted while waiting for writer input");
 				e1.printStackTrace();
+			}catch(Exception e2){
+				e2.printStackTrace();
 			}
 
 		}
 	}
 
-	private void connectToServer(int serverIndex) {
+	private void connectToServer(int serverIndex) throws Exception {
 		if (!(serverIndex >= 0 && serverIndex < socket.length)) {
-			// TODO Throw exception
-			System.out.println("The server index is out of range, "
+			
+			throw new Exception("The server index is out of range, "
 					+ "please give a value between 0 and " + socket.length
 					+ (-1));
 		} else if (mon.isConnected(serverIndex)) {
@@ -149,12 +149,13 @@ public class ClientWriter extends Thread {
 	 * 
 	 * @param serverIndex
 	 *            the index of the server one wants to disconnect to
+	 * @throws Exception 
 	 */
 
-	private synchronized void disconnectToServer(int serverIndex) {
+	private synchronized void disconnectToServer(int serverIndex) throws Exception {
 		if (!(serverIndex >= 0 && serverIndex < socket.length)) {
-			// TODO Throw exception
-			System.out.println("The server index is out of range, "
+		
+			throw new Exception("The server index is out of range, "
 					+ "please give a value between 0 and " + socket.length);
 		} else if (!mon.isConnected(serverIndex)) {
 			System.out.println("The server with index " + serverIndex
