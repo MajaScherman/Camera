@@ -28,7 +28,9 @@ public class ServerMonitor {
 	/**
 	 * Attributes for commands
 	 */
-	private boolean movieMode;
+	private boolean movieMode, realMovieMode; // realMovieMode notices changes
+	private boolean hasChanged;											// in forcemode but does not
+												// update until set to auto
 	private long lastTimeSentImg;
 
 	// Hopefully its ok to add 3*4 for the type, cameraNbr, and size.
@@ -96,6 +98,8 @@ public class ServerMonitor {
 			forcedMode = true;
 			break;
 		case AUTO:
+			hasChanged = movieMode == realMovieMode;
+			movieMode = realMovieMode;
 			forcedMode = false;
 			break;
 		default:
@@ -118,6 +122,10 @@ public class ServerMonitor {
 			return (((diff >= 5000) || movieMode)); // && isConnected
 		}
 	}
+	
+	public synchronized boolean checkIfHasChanged(){
+		return hasChanged;
+	}
 
 	public synchronized void waitForConnection() throws InterruptedException {
 		while (!isConnected) {
@@ -125,9 +133,15 @@ public class ServerMonitor {
 		}
 	}
 
-	public synchronized void setMovieMode(boolean b) {
-		movieMode = b;
+	public synchronized boolean trySetMovieMode(boolean b) {
+		if (!forcedMode) {
+			movieMode = b;
+			notifyAll();
+			return true;
+		}
+		realMovieMode = b;
 		notifyAll();
+		return false;
 	}
 
 	public synchronized void updateLastTimeSent() {

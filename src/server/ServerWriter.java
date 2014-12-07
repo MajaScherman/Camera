@@ -58,19 +58,25 @@ public class ServerWriter extends Thread {
 
 				while (mon.isConnected()) {
 					if (camera.motionDetected()) {
-						mon.setMovieMode(true);
-						ByteBuffer bb = ByteBuffer.allocate(8);
-						bb.putInt(0,ServerMonitor.COMMAND);
-						bb.putInt(4,ServerMonitor.MOVIE_MODE);
-						os.write(bb.array(), 0, 8);
-						os.flush();
-
+						if(mon.trySetMovieMode(true)){
+							ByteBuffer bb = ByteBuffer.allocate(8);
+							bb.putInt(0,ServerMonitor.COMMAND);
+							bb.putInt(4,ServerMonitor.MOVIE_MODE);
+							os.write(bb.array(), 0, 8);
+							os.flush();
+						}
 					}
 					if (mon.isReadyToSendImage()) {
+						if(mon.checkIfHasChanged()){
+							ByteBuffer bb = ByteBuffer.allocate(8);
+							bb.putInt(0,ServerMonitor.COMMAND);
+							bb.putInt(4,ServerMonitor.MOVIE_MODE);
+							os.write(bb.array(), 0, 8);
+							os.flush();
+						}
 						try {
 							sleep(offset);
 						} catch (InterruptedException e1) {
-							// TODO Auto-generated catch block
 							e1.printStackTrace();
 						}
 						int length = camera.getJPEG(image, 0);

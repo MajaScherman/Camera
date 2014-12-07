@@ -10,7 +10,7 @@ public class Main {
 		String[] argumentsToS1 = new String[] {"argus-6.student.lth.se","8888","5555"};
 		ServerMain.main(argumentsToS1);
 		//Start up server 2
-		String[] argumentsToS2 = new String[] {"argus-6.student.lth.se","8888","6666"};
+		String[] argumentsToS2 = new String[] {"argus-7.student.lth.se","5899","6666"};
 		ServerMain.main(argumentsToS2);
 		
 		//Start up Client

@@ -6,11 +6,11 @@ public class Image {
 	private long timeStamp;
 	private long delay;
 	
-	public Image(int cameraNbr, long timeStamp, long delay, byte[] image) {
+	public Image(int cameraNbr, long timeStamp,  byte[] image) {
 		this.cameraNbr = cameraNbr;
 		this.image = image;
 		this.timeStamp = timeStamp;
-		this.delay= delay;
+		delay = 0;
 	}
 
 	public int getCameraNbr() {
@@ -35,5 +35,9 @@ public class Image {
 
 	public long getDelay() {
 		return delay;
+	}
+
+	public void setDelay(long transferDelay) {
+		delay = transferDelay;
 	}
 }
