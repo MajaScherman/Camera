@@ -29,7 +29,7 @@ public class GUI extends JFrame {
 	public GUI(ClientMonitor mon) {
 		super();
 		frame = new JFrame();
-		frame.setSize(1000, 600);
+		frame.setSize(1500, 600);
 		frame.getContentPane().setLayout(new GridLayout(2, 2));
 		Border blackline = BorderFactory.createLineBorder(Color.black);
 
@@ -44,6 +44,7 @@ public class GUI extends JFrame {
 		imageViewer1.setBackground(Color.GRAY);
 		imageViewer1.setBorder(blackline);
 		frame.getContentPane().add(imageViewer1);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		//Delay panel
 //		delay1 = new DelayPanel();
@@ -79,21 +80,20 @@ public class GUI extends JFrame {
 		}
 
 	}
-
 	public void sendCommandToInfoPanel(int command) {
 		switch (command) {
 		case ClientMonitor.MOVIE_MODE:		
-			infoPanel.setLabelText(3, "Movie Mode");
+			infoPanel.setLabelText(2, "Movie Mode");
 			buttonPanel.setButtonText(1, "IDLE MODE");
 			break;
 		case ClientMonitor.ASYNCHRONIZED:
-			infoPanel.setLabelText(2, "Asynchronized Mode");
+			infoPanel.setLabelText(3, "Asynchronized Mode");
 			buttonPanel.setButtonText(2, "SYNCHRONIZED MODE");
 
 			break;
 		case ClientMonitor.SYNCHRONIZED:
-			infoPanel.setLabelText(2, "Synchronized Mode");
-			buttonPanel.setButtonText(3, "ASYNCHRONIZED");
+			infoPanel.setLabelText(3, "Synchronized Mode");
+			buttonPanel.setButtonText(2, "ASYNCHRONIZED");
 
 			break;
 		default:

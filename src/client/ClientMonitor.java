@@ -15,15 +15,15 @@ public class ClientMonitor {
 	private boolean newImage; // The updater checks if a new image has arrived
 								// in data
 	private boolean newMode; // The updater checks if a new mode has arrived in
-								// data
+	private boolean forceMode; // data
+	private int syncMode;
+	private boolean movieMode;
 	/**
 	 * Attributes for connecting
 	 */
-	private Socket[] socket;
-	private SocketAddress[] socketAddress;
 	private boolean[] isConnected;
+
 	private InputStream[] inputStream;
-	private OutputStream[] outputStream;
 	/**
 	 * Header attributes
 	 */
@@ -40,6 +40,8 @@ public class ClientMonitor {
 	public static final int IDLE_MODE = 3;
 	public static final int ASYNCHRONIZED = 4;
 	public static final int SYNCHRONIZED = 5;
+	public static final int AUTO = 6;
+	public static final int FORCED = 7;
 
 	/**
 	 * Attributes for handling images
@@ -71,12 +73,10 @@ public class ClientMonitor {
 	// video in 25 fps
 	public static final int NUMBER_OF_CAMERAS = 2;
 
-	public ClientMonitor(int nbrOfSockets, SocketAddress[] socketAddr) {
-		socketAddress = socketAddr;
-		socket = new Socket[nbrOfSockets];
+	public ClientMonitor(int nbrOfSockets) {
 		isConnected = new boolean[nbrOfSockets];
+
 		inputStream = new InputStream[nbrOfSockets];
-		outputStream = new OutputStream[nbrOfSockets];
 
 		writerBufferServer1 = new CommandBuffer(COMMAND_BUFFER_SIZE);
 		writerBufferServer2 = new CommandBuffer(COMMAND_BUFFER_SIZE);
@@ -85,82 +85,7 @@ public class ClientMonitor {
 		imageBufferServer2 = new ImageBuffer(IMAGE_BUFFER_SIZE);
 		updateGUI = false;
 		imageS1LastTime = false;
-	}
-
-	/**
-	 * Establishes connection to server
-	 * 
-	 * @param serverIndex
-	 *            the index of the server we want to connect to (start from
-	 *            index 0 and goes up to socketArray.length)
-	 */
-	public synchronized void connectToServer(int serverIndex) {
-		if (!(serverIndex >= 0 && serverIndex < socket.length)) {
-			// TODO Throw exception
-			System.out.println("The server index is out of range, "
-					+ "please give a value between 0 and " + socket.length
-					+ (-1));
-		} else if (isConnected[serverIndex]) {
-			System.out.println("The server is already connected");
-		} else {
-			// Establish connection
-			// Server must be running before trying to connect
-			String host = socketAddress[serverIndex].getHost();
-			int port = socketAddress[serverIndex].getPortNumber();
-			try {
-				socket[serverIndex] = new Socket(host, port);
-				// Set socket to no send delay
-				socket[serverIndex].setTcpNoDelay(true);
-				// Get input stream
-				inputStream[serverIndex] = socket[serverIndex].getInputStream();
-				// Get output stream
-				outputStream[serverIndex] = socket[serverIndex]
-						.getOutputStream();
-				isConnected[serverIndex] = true;
-
-				if (serverIndex == 0) {
-					writerBufferServer1 = new CommandBuffer(COMMAND_BUFFER_SIZE);
-				} else {
-					writerBufferServer2 = new CommandBuffer(COMMAND_BUFFER_SIZE);
-
-				}
-				notifyAll();
-				System.out.println("Server connection with server "
-						+ serverIndex + " established");
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	/**
-	 * Disconnects to the server
-	 * 
-	 * @param serverIndex
-	 *            the index of the server one wants to disconnect to
-	 */
-	public synchronized void disconnectToServer(int serverIndex) {
-		if (!(serverIndex >= 0 && serverIndex < socket.length)) {
-			// TODO Throw exception
-			System.out.println("The server index is out of range, "
-					+ "please give a value between 0 and " + socket.length);
-		} else if (!isConnected[serverIndex]) {
-			System.out.println("The server with index " + serverIndex
-					+ " is not connected");
-		} else {
-			// Close the socket, i.e. abort the connection
-			try {
-				socket[serverIndex].close();
-				isConnected[serverIndex] = false;
-				notifyAll();
-				System.out.println("Disconnected to server" + serverIndex
-						+ " successfully");
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+		syncMode = 0;
 	}
 
 	public synchronized void waitForConnection(int serverIndex)
@@ -171,8 +96,34 @@ public class ClientMonitor {
 
 	}
 
-	public synchronized void putCommandToClientWriter(int serverIndex,
-			int command) {
+	public synchronized void putCommandToAllServers(int command) {
+		updaterBuffer.putCommandToBuffer(command);
+		newMode = true;
+		updateGUI = true;
+		switch (command) {
+		case IDLE_MODE:
+			movieMode = false;
+			break;
+		case MOVIE_MODE:
+			movieMode = true;
+			break;
+		case AUTO:
+			forceMode = false;
+			break;
+		case FORCED:
+			forceMode = true;
+			break;
+		}
+
+		writerBufferServer1.putCommandToBuffer(command);
+		writerBufferServer2.putCommandToBuffer(command);
+		notifyAll();
+	}
+
+	public synchronized void putCommand(int serverIndex, int command) {
+		updaterBuffer.putCommandToBuffer(command);
+		newMode = true;
+		updateGUI = true;
 		if (serverIndex == 0) {
 			writerBufferServer1.putCommandToBuffer(command);
 		} else {
@@ -183,80 +134,23 @@ public class ClientMonitor {
 
 	public synchronized void putCommandToUpdaterBuffer(int com) {
 		updaterBuffer.putCommandToBuffer(com);
+		switch (com) {
+		case SYNCHRONIZED:
+			syncMode = 1;
+			break;
+		case ASYNCHRONIZED:
+			syncMode = 2;
+			break;
+
+		}
+		newMode = true;
+		updateGUI = true;
+		notifyAll();
 	}
 
 	public synchronized int getCommandFromUpdaterBuffer() {
 		int com = updaterBuffer.getCommandFromBuffer();
 		return com;
-	}
-
-	public synchronized void putImageToBuffer(Image image, int serverIndex) {
-		if (serverIndex == 0) {
-			imageBufferServer1.putImageToBuffer(image);
-		} else if (serverIndex == 1) {
-			imageBufferServer2.putImageToBuffer(image);
-		}
-		notifyAll();
-	}
-
-	public synchronized Image getImageFromBuffer() {
-		while (imageBufferServer1.getNbrOfImagesInBuffer() <= 0
-				&& imageBufferServer2.getNbrOfImagesInBuffer() <= 0) {
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		Image image;
-		if (imageS1LastTime) {// If server 1 was checked first last time
-			imageS1LastTime = !imageS1LastTime;
-			if (imageBufferServer2.getNbrOfImagesInBuffer() > 0) {
-				image = imageBufferServer2.getImageFromBuffer();
-			} else {
-				image = imageBufferServer1.getImageFromBuffer();
-			}
-		} else {// If server 2 was checked first last time
-
-			if (imageBufferServer1.getNbrOfImagesInBuffer() > 0) {
-				image = imageBufferServer1.getImageFromBuffer();
-			} else {
-				image = imageBufferServer2.getImageFromBuffer();
-			}
-		}
-		notifyAll();
-		return image;
-	}
-
-	public synchronized long SyncMode(Image imageC1, Image imageC2) {
-
-		return 0;
-	}
-
-	/**
-	 * Tells the updater to update the GUI when time is due.
-	 */
-	public synchronized int checkUpdate() throws Exception {
-		while (updateGUI == false) {
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		updateGUI = false;
-		notifyAll();
-		if (newImage) {
-			newImage = false;
-			notifyAll();
-			return IMAGE;
-		} else if (newMode) {
-			newMode = false;
-			notifyAll();
-			return COMMAND;
-		} else {
-			throw new Exception("Check update method is wrong");
-		}
 	}
 
 	public synchronized InputStream getInputStream(int serverIndex) {
@@ -297,29 +191,85 @@ public class ClientMonitor {
 		return temp;
 	}
 
-	public synchronized OutputStream[] getOutPutStreams() {
-		return outputStream;
-	}
-
-	public synchronized void setNewImage(boolean b) {
-		newImage = b;
+	public synchronized DataForUpdater getUpdateData()
+			throws InterruptedException {
+		while (updateGUI == false) {
+			wait();
+		}
+		int type;
+		int command;
+		boolean onlyOneimage = false;
+		Image[] images = null;
+		if (newMode) {
+			newMode = false;
+			type = COMMAND;
+			command = getCommandFromUpdaterBuffer();
+		} else {
+			newImage = false;
+			type = IMAGE;
+			command = 0;
+			onlyOneimage = isOnlyOneImage();
+			if (onlyOneimage) {
+				images = new Image[] { getImageFromBuffer() };
+			} else {
+				images = getImagesFromBuffers();
+			}
+		}
+		updateGUI = false;
 		notifyAll();
-	}
+		return new DataForUpdater(type, command, getForceMode(),
+				getMovieMode(), onlyOneimage, getSyncMode(), images);
 
-	public synchronized void setUpdateGUI(boolean b) {
-		updateGUI = b;
-		notifyAll();
-	}
-
-	public synchronized void setNewCommand(boolean b) {
-		newMode = b;
-		notifyAll();
 	}
 
 	public synchronized boolean isOnlyOneImage() {
 
 		return !(imageBufferServer1.getNbrOfImagesInBuffer() > 0 && imageBufferServer2
 				.getNbrOfImagesInBuffer() > 0);
+	}
+
+	public synchronized void putImageToBuffer(Image image, int serverIndex)
+			throws Exception {
+		newImage = true;
+		updateGUI = true;
+		if (serverIndex == 0) {
+			imageBufferServer1.putImageToBuffer(image);
+		} else if (serverIndex == 1) {
+			imageBufferServer2.putImageToBuffer(image);
+		} else {
+			throw new Exception(
+					"you cant put a Image to a buffer that dont exist, give putImageToBuffer a valid serverIndex");
+		}
+		notifyAll();
+	}
+
+	public synchronized Image getImageFromBuffer() {
+		while (imageBufferServer1.getNbrOfImagesInBuffer() <= 0
+				&& imageBufferServer2.getNbrOfImagesInBuffer() <= 0) {
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		Image image;
+		if (imageS1LastTime) {// If server 1 was checked first last time
+			imageS1LastTime = !imageS1LastTime;
+			if (imageBufferServer2.getNbrOfImagesInBuffer() > 0) {
+				image = imageBufferServer2.getImageFromBuffer();
+			} else {
+				image = imageBufferServer1.getImageFromBuffer();
+			}
+		} else {// If server 2 was checked first last time
+
+			if (imageBufferServer1.getNbrOfImagesInBuffer() > 0) {
+				image = imageBufferServer1.getImageFromBuffer();
+			} else {
+				image = imageBufferServer2.getImageFromBuffer();
+			}
+		}
+		notifyAll();
+		return image;
 	}
 
 	public synchronized Image[] getImagesFromBuffers() {
@@ -329,4 +279,37 @@ public class ClientMonitor {
 		return images;
 	}
 
+	public synchronized void setIsConnected(int serverIndex, boolean status) {
+		isConnected[serverIndex] = status;
+		notifyAll();
+	}
+
+	public synchronized void createServerCommandBuffer(int serverIndex) {
+		if (serverIndex == 0) {
+			writerBufferServer1 = new CommandBuffer(COMMAND_BUFFER_SIZE);
+		} else {
+			writerBufferServer2 = new CommandBuffer(COMMAND_BUFFER_SIZE);
+
+		}
+		notifyAll();
+	}
+
+	public synchronized void setInputStream(InputStream is, int serverIndex) {
+		inputStream[serverIndex] = is;
+		notifyAll();
+
+	}
+
+	public synchronized int getSyncMode() {
+
+		return syncMode;
+	}
+
+	public synchronized boolean getForceMode() {
+		return forceMode;
+	}
+
+	public synchronized boolean getMovieMode() {
+		return movieMode;
+	}
 }

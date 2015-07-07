@@ -9,12 +9,11 @@ import client.ButtonHandler;
 import client.ClientMonitor;
 
 public class ButtonPanel extends JPanel {
-	private JButton movie, connect1, connect2, sync;
+	private JButton movie, connect1, connect2, sync, auto;
 	private ButtonHandler buttonHandler;
-	private InfoPanel infoPanel;
 	
 	public ButtonPanel(ClientMonitor mon, InfoPanel infoPanel) {
-		setLayout(new GridLayout(2, 2));
+		setLayout(new GridLayout(5, 1));
 		buttonHandler = new ButtonHandler(mon,infoPanel);
 
 		
@@ -26,19 +25,24 @@ public class ButtonPanel extends JPanel {
 		connect2.setActionCommand("OPEN CONNECTION 2");
 		connect2.addActionListener(buttonHandler);
 		
-		movie = new JButton("MOVIE");
+		movie = new JButton("MOVIE MODE");
 		movie.setActionCommand("MOVIE");
 		movie.addActionListener(buttonHandler);
 
-		sync = new JButton("SYNCHRONIZED");
+		sync = new JButton("SYNCHRONIZED MODE");
 		sync.setActionCommand("SYNCHRONIZED");
 		sync.addActionListener(buttonHandler);
+		
+		auto = new JButton("FORCE MODE");
+		auto.setActionCommand("FORCE");
+		auto.addActionListener(buttonHandler);
+		
 		
 		add(connect1);
 		add(connect2);
 		add(movie);
 		add(sync);
-
+		add(auto);
 	}
 	
 	public void setButtonText(int buttonIndex, String text) {

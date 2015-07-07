@@ -10,15 +10,16 @@ public class ImageBuffer {
 			putIndex = getIndex = 0;
 			imageBuffer = new Image[bufferSize];
 		}
-
+		
 		public void putImageToBuffer(Image image) {
 			imageBuffer[putIndex] = image;
 			putIndex++;
+			nbrOfImageEntries++;
 			if (putIndex >= imageBuffer.length) {
 				putIndex = 0;
 			}
-			if (nbrOfImageEntries < imageBuffer.length -1) {
-				nbrOfImageEntries++;
+			if (nbrOfImageEntries > imageBuffer.length ) {
+				nbrOfImageEntries = imageBuffer.length;
 			}
 		}
 
